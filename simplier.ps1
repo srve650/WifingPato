@@ -318,6 +318,7 @@ function ClearCache {
     Remove-Item "$sysInfoDir\network_config.txt" -Force -ErrorAction SilentlyContinue
     # ShowTree
     Remove-Item "$env:TEMP\tree.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$env:TEMP\example-logs.txt" -Force -ErrorAction SilentlyContinue
 
     # Delete run box history
     reg delete HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU /va /f
