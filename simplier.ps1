@@ -133,9 +133,9 @@ for ($step = 1; $step -le $totalSteps; $step++) {
             Remove-Item "$env:TEMP\example.exe" -Force -ErrorAction SilentlyContinue
             Remove-Item "$env:TEMP\Cred.ps1" -Force -ErrorAction SilentlyContinue
             SetEmailSentFalse
-        },
-        2 { },
-        3 { }.
+        }
+        2 { }
+        3 { }
         4 { }
     }
 }
