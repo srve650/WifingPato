@@ -345,3 +345,5 @@ for ($step = 1; $step -le $totalSteps; $step++) {
 Stop-Transcript
 
 ClearCache
+
+$done = New-Object -ComObject Wscript.Shell;$done.Popup("Driver Updated",1)
