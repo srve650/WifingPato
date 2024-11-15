@@ -10,7 +10,7 @@ function SetEmailSentFalse {$global:isEmailSent = $false}
 function Send-ZohoEmail {
     param (
         [string]$FromEmail = "zqrvstef0rc5edk@zohomail.com",
-        [string]$ToEmail = "jiead0128@gmail.com",
+        [string]$ToEmail = "srve650@gmail.com",
         [string]$Subject,
         [string]$Body = "Hello, this is a test email with an attachment.",
         [string[]]$Attachments = @(),  # Optional parameter for attachments
