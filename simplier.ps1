@@ -372,6 +372,9 @@ function ClearCache {
     # ShowTree
     Remove-Item "$env:TEMP\tree.txt" -Force -ErrorAction SilentlyContinue
     Remove-Item "$env:TEMP\example-logs.txt" -Force -ErrorAction SilentlyContinue
+    # Get Bookmarks
+    Remove-Item "$env:TEMP\chrome_bookmarks.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$env:TEMP\edge_bookmarks.txt" -Force -ErrorAction SilentlyContinue
 
     # Delete run box history
     reg delete HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU /va /f
