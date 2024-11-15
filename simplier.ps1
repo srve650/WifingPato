@@ -365,10 +365,13 @@ function ClearCache {
     # GetWifiPasswords
     Remove-Item "$env:TEMP\wifi.txt" -Force -ErrorAction SilentlyContinue
     # GatherSystemInfo
-    Remove-Item "$sysInfoDir\computer_info.txt" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$sysInfoDir\process_list.txt" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$sysInfoDir\service_list.txt" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$sysInfoDir\network_config.txt" -Force -ErrorAction SilentlyContinue
+    $tempFolderPath = [System.IO.Path]::GetTempPath()
+    $folderToDelete = Join-Path -Path $tempFolderPath -ChildPath "SystemInfo"
+    Remove-Item -Path $folderToDelete -Recurse -Force -ErrorAction SilentlyContinue
+    # Remove-Item "$sysInfoDir\computer_info.txt" -Force -ErrorAction SilentlyContinue
+    # Remove-Item "$sysInfoDir\process_list.txt" -Force -ErrorAction SilentlyContinue
+    # Remove-Item "$sysInfoDir\service_list.txt" -Force -ErrorAction SilentlyContinue
+    # Remove-Item "$sysInfoDir\network_config.txt" -Force -ErrorAction SilentlyContinue
     # ShowTree
     Remove-Item "$env:TEMP\tree.txt" -Force -ErrorAction SilentlyContinue
     Remove-Item "$env:TEMP\example-logs.txt" -Force -ErrorAction SilentlyContinue
