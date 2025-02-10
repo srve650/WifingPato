@@ -48,7 +48,7 @@ function Send-ZohoEmail {
     try {
         Write-Host "Sending Email.... please wait..."
         $smtpClient.Send($mailMessage)
-        # Write-Host "Email sent successfully to $ToEmail." + $Subject
+        Write-Host "Email sent successfully."
         $message = "Email sent successfully to $toEmail. " + $Subject
         # Send the webhook notification
         Send-EmailNotification -ToEmail $toEmail -WebhookUrl $email_webhookUrl -Message $message
