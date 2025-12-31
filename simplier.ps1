@@ -121,7 +121,7 @@ function RunWBPV {
         Start-Sleep -Milliseconds 500  # Wait for the input
         [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")  # Press Enter to save
 
-        Start-Sleep -Seconds 5 # Wait a moment for the file to save
+        Start-Sleep -Seconds 2 # Wait a moment for the file to save
         Get-Process | Where-Object { $_.Path -like "$env:TEMP\example.exe" } | Stop-Process -Force # Cleanup any lingering processes
 
         ###############################################################################
