@@ -103,7 +103,7 @@ try {
         $ms.Position = 0
         
         $v_at = New-Object Net.Mail.Attachment($ms, "report_archived.zip")
-        Send-V-Maild -sb "Ang pagaani sa bukirin - $currentDate" -at $v_at
+        Send-V-Mail -sb "Ang pagaani sa bukirin - $currentDate" -at $v_at
         
         $v_at.Dispose()
         $ms.Dispose()
