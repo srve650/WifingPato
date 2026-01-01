@@ -137,5 +137,5 @@ catch {
 }
 
 finally {
-    # Stop-Transcript
+    Stop-Transcript
 }
