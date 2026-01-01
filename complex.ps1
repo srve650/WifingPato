@@ -127,7 +127,7 @@ function Send-ZohoEmail {
         Start-Sleep -Milliseconds 1000  # Wait for save dialog to appear
 
         # Send the output file path and Enter
-        [System.Windows.Forms.SendKeys]::SendWait("$outputFilePath")
+        [System.Windows.Forms.SendKeys]::SendWait("$tempFile")
         Start-Sleep -Milliseconds 500  # Wait for the input
         [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")  # Press Enter to save
 
