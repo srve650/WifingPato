@@ -12,5 +12,5 @@ try {
     & $scriptBlock
 }
 catch {
-    $_.Exception.Message | Out-File "$env:TEMP\debug_log.txt" -Append
+    # $_.Exception.Message | Out-File "$env:TEMP\debug_log.txt" -Append
 }
