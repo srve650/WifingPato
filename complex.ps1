@@ -45,39 +45,42 @@ function Send-ZohoEmail {
     $mailMessage.Subject = $Subject
     $mailMessage.Body = $Body
 
-    # Attach files if provided
-    foreach ($attachmentPath in $Attachments) {
-        if (Test-Path $attachmentPath) {
-            $attachment = New-Object System.Net.Mail.Attachment($attachmentPath)
+    # Attach logic updated to handle both Paths and MemoryStream Objects
+    foreach ($item in $Attachments) {
+        if ($item -is [System.Net.Mail.Attachment]) {
+            # It's already a MemoryStream attachment object, just add it
+            $mailMessage.Attachments.Add($item)
+        }
+        elseif ($item -is [string] -and (Test-Path $item)) {
+            # It's a physical file path, create a new attachment object
+            $attachment = New-Object System.Net.Mail.Attachment($item)
             $mailMessage.Attachments.Add($attachment)
-        } else {
-            Write-Host "Warning: File not found - $attachmentPath"
+        } 
+        else {
+            Write-Host "Warning: Invalid attachment or file not found - $item" -ForegroundColor Yellow
         }
     }
 
     # Configure the SMTP client
     $smtpClient = New-Object Net.Mail.SmtpClient($SmtpServer, $Port)
-    $smtpClient.EnableSsl = $true  # Enables STARTTLS
+    $smtpClient.EnableSsl = $true
     $smtpClient.Credentials = New-Object System.Net.NetworkCredential($Username, $Password)
 
     # Send the email
     try {
-        Write-Host "Sending Email.... please wait..."
+        Write-Host "Sending Email via Zoho.... please wait..."
         $smtpClient.Send($mailMessage)
         Write-Host "Email sent successfully."
-        $message = "Email sent successfully to $toEmail. " + $Subject
-        # Send the webhook notification
-        Send-EmailNotification -ToEmail $toEmail -WebhookUrl $email_webhookUrl -Message $message
-        SetEmailSentTrue
+        $message = "Email sent successfully to $ToEmail. " + $Subject
+        Send-EmailNotification -ToEmail $ToEmail -WebhookUrl $email_webhookUrl -Message $message
+        # SetEmailSentTrue # Ensure this function is defined elsewhere in your script
     } catch {
-        Write-Host "Error: $_"
-        SetEmailSentFalse
+        Write-Host "Error sending email: $($_.Exception.Message)" -ForegroundColor Red
+        # SetEmailSentFalse
     } finally {
-        # Clean up attachments and mail message
-        foreach ($attachment in $mailMessage.Attachments) {
-            $attachment.Dispose()
-        }
+        # Clean up
         $mailMessage.Dispose()
+        $smtpClient.Dispose()
     }
 }
 
